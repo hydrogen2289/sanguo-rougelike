@@ -1,0 +1,63 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/battle/hero_unit.gd" id="1_hero"]
+[ext_resource type="Script" path="res://scripts/battle/skill_component.gd" id="2_skill"]
+
+[sub_resource type="CapsuleShape3D" id="cap_shape"]
+radius = 0.45
+height = 1.2
+
+[sub_resource type="SphereShape3D" id="sensor_shape"]
+radius = 8.0
+
+[sub_resource type="SphereShape3D" id="melee_shape"]
+radius = 1.5
+
+[sub_resource type="SphereShape3D" id="aura_shape"]
+radius = 3.0
+
+[node name="HeroUnit" type="CharacterBody3D"]
+collision_layer = 1
+collision_mask = 4
+script = ExtResource("1_hero")
+
+[node name="Sprite" type="Sprite3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+billboard = 2
+pixel_size = 0.005
+shaded = true
+alpha_cut = 2
+texture_filter = 3
+
+[node name="Col" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+shape = SubResource("cap_shape")
+
+[node name="TargetSensor" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+
+[node name="SensorShape" type="CollisionShape3D" parent="TargetSensor"]
+shape = SubResource("sensor_shape")
+
+[node name="MeleeRange" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+
+[node name="MeleeShape" type="CollisionShape3D" parent="MeleeRange"]
+shape = SubResource("melee_shape")
+
+[node name="AuraZone" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 1
+monitorable = false
+
+[node name="AuraShape" type="CollisionShape3D" parent="AuraZone"]
+shape = SubResource("aura_shape")
+
+[node name="Skill" type="Node" parent="."]
+script = ExtResource("2_skill")
+
+[node name="Anim" type="Node" parent="."]

@@ -1,0 +1,125 @@
+[gd_scene load_steps=14 format=3]
+
+[ext_resource type="Shader" path="res://shaders/ground_fade.gdshader" id="1_shader"]
+[ext_resource type="Texture2D" path="res://assets/textures/ground/ground_paper.png" id="2_ground"]
+[ext_resource type="Script" path="res://scripts/battle/camera_rig.gd" id="3_cam"]
+[ext_resource type="PackedScene" path="res://scenes/units/hero.tscn" id="4_hero"]
+[ext_resource type="Script" path="res://scripts/battle/player_lord.gd" id="5_lord"]
+[ext_resource type="Script" path="res://scripts/battle/wave_director.gd" id="6_wave"]
+[ext_resource type="Script" path="res://scripts/battle/weather_manager.gd" id="7_weather"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="8_hud"]
+
+[sub_resource type="Environment" id="env_paper"]
+background_mode = 1
+background_color = Color(0.949, 0.918, 0.827, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.863, 0.894, 0.847, 1)
+ambient_light_energy = 0.6
+tonemap_mode = 2
+fog_enabled = true
+fog_light_color = Color(0.910, 0.878, 0.784, 1)
+fog_density = 0.012
+fog_sky_affect = 0.0
+
+[sub_resource type="PlaneMesh" id="ground_mesh"]
+size = Vector2(60, 60)
+
+[sub_resource type="ShaderMaterial" id="ground_mat"]
+shader = ExtResource("1_shader")
+shader_parameter/uv_scale = Vector2(12, 12)
+shader_parameter/fade_start = 18.0
+shader_parameter/fade_end = 26.0
+shader_parameter/fade_color = Color(0.949, 0.918, 0.827, 1)
+shader_parameter/base_tex = ExtResource("2_ground")
+
+[sub_resource type="BoxShape3D" id="wall_x"]
+size = Vector3(2, 3, 44)
+
+[sub_resource type="BoxShape3D" id="wall_z"]
+size = Vector3(44, 3, 2)
+
+[node name="Battle" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("env_paper")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+rotation = Vector3(-0.907572, -0.523599, 0)
+light_color = Color(1, 0.965, 0.878, 1)
+light_energy = 1.15
+shadow_enabled = true
+directional_shadow_mode = 1
+directional_shadow_max_distance = 45.0
+
+[node name="Ground" type="Node3D" parent="."]
+
+[node name="Mesh" type="MeshInstance3D" parent="Ground"]
+mesh = SubResource("ground_mesh")
+surface_material_override/0 = SubResource("ground_mat")
+
+[node name="Walls" type="Node3D" parent="Ground"]
+
+[node name="WallN" type="StaticBody3D" parent="Ground/Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -20.5)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape3D" parent="Ground/Walls/WallN"]
+shape = SubResource("wall_z")
+
+[node name="WallS" type="StaticBody3D" parent="Ground/Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 20.5)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape3D" parent="Ground/Walls/WallS"]
+shape = SubResource("wall_z")
+
+[node name="WallW" type="StaticBody3D" parent="Ground/Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.5, 0, 0)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape3D" parent="Ground/Walls/WallW"]
+shape = SubResource("wall_x")
+
+[node name="WallE" type="StaticBody3D" parent="Ground/Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.5, 0, 0)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape3D" parent="Ground/Walls/WallE"]
+shape = SubResource("wall_x")
+
+[node name="CameraRig" type="Node3D" parent="."]
+script = ExtResource("3_cam")
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig"]
+fov = 45.0
+
+[node name="Units" type="Node3D" parent="."]
+
+[node name="PlayerLord" parent="Units" instance=ExtResource("4_hero")]
+unit_id = "liubei"
+is_lord = true
+script = ExtResource("5_lord")
+
+[node name="Heroes" type="Node3D" parent="Units"]
+
+[node name="Enemies" type="Node3D" parent="Units"]
+
+[node name="Projectiles" type="Node3D" parent="."]
+
+[node name="Pickups" type="Node3D" parent="."]
+
+[node name="VFX" type="Node3D" parent="."]
+
+[node name="WaveDirector" type="Node" parent="."]
+script = ExtResource("6_wave")
+
+[node name="WeatherManager" type="Node" parent="."]
+script = ExtResource("7_weather")
+
+[node name="HUDLayer" type="CanvasLayer" parent="."]
+
+[node name="HUD" parent="HUDLayer" instance=ExtResource("8_hud")]

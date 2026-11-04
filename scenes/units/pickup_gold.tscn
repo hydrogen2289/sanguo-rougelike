@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/battle/pickup_gold.gd" id="1_gold"]
+[ext_resource type="Texture2D" path="res://assets/textures/icons/coin.png" id="2_coin"]
+
+[node name="PickupGold" type="Node3D"]
+script = ExtResource("1_gold")
+
+[node name="Sprite" type="Sprite3D" parent="."]
+billboard = 2
+pixel_size = 0.006
+texture_filter = 3
+texture = ExtResource("2_coin")

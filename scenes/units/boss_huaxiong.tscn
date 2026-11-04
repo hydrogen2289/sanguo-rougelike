@@ -1,0 +1,46 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/battle/boss_huaxiong.gd" id="1_boss"]
+
+[sub_resource type="CapsuleShape3D" id="cap_shape"]
+radius = 0.7
+height = 1.8
+
+[sub_resource type="SphereShape3D" id="sensor_shape"]
+radius = 8.0
+
+[sub_resource type="SphereShape3D" id="melee_shape"]
+radius = 2.0
+
+[node name="BossHuaxiong" type="CharacterBody3D"]
+collision_layer = 2
+collision_mask = 4
+script = ExtResource("1_boss")
+
+[node name="Sprite" type="Sprite3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, 0)
+billboard = 2
+pixel_size = 0.005
+shaded = true
+alpha_cut = 2
+texture_filter = 3
+
+[node name="Col" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("cap_shape")
+
+[node name="TargetSensor" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 1
+monitorable = false
+
+[node name="SensorShape" type="CollisionShape3D" parent="TargetSensor"]
+shape = SubResource("sensor_shape")
+
+[node name="MeleeRange" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 1
+monitorable = false
+
+[node name="MeleeShape" type="CollisionShape3D" parent="MeleeRange"]
+shape = SubResource("melee_shape")

@@ -1,0 +1,12 @@
+{
+	"upgrades": [
+		{"id": "modao", "name": "磨刀", "effect": {"atk_pct": 0.08}, "desc": "全队攻击 +8%", "shop_price": 20},
+		{"id": "lianti", "name": "练体", "effect": {"maxhp_flat": 10}, "desc": "全队 HP 上限 +10", "shop_price": 20},
+		{"id": "lianjicaolian", "name": "连击操练", "effect": {"atk_speed_pct": 0.08}, "desc": "全队攻速 +8%", "shop_price": 25},
+		{"id": "qingzhuang", "name": "轻装", "effect": {"lord_move_pct": 0.10}, "desc": "主公移速 +10%", "shop_price": 20},
+		{"id": "xingjun", "name": "行军", "effect": {"move_pct": 0.05}, "desc": "全队移速 +5%", "shop_price": 25},
+		{"id": "kaoshang", "name": "犒赏", "effect": {"gold_flat": 15}, "desc": "立即获得 15 军资", "shop_price": 0, "instant": true},
+		{"id": "junyi_caoyao", "name": "军医草药", "effect": {"heal_all_ratio": 0.30}, "desc": "立即回复全体 30% HP", "shop_price": 25, "instant": true},
+		{"id": "jianling", "name": "简令", "effect": {"cd_reduction": 0.08}, "desc": "全体技能 CD -8%", "shop_price": 35}
+	]
+}

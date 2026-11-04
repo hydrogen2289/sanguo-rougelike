@@ -1,0 +1,10 @@
+{
+	"shop_waves": [4, 6],
+	"slots": 6,
+	"shelf": {"relics": 2, "upgrades": 2, "heal": 1, "extra": 1},
+	"heal_item": {"id": "junyi_zhenzhi", "name": "军医诊治", "effect": {"heal_all_ratio": 0.30}, "price": 20},
+	"refresh_price": 20,
+	"relic_price": {"normal": 25, "rare": 40, "epic": 60},
+	"upgrade_price_min": 20,
+	"upgrade_price_max": 35
+}

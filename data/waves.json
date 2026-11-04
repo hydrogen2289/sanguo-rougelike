@@ -1,0 +1,22 @@
+{
+	"waves": [
+		{"idx": 1, "duration": 25, "base_hp": 15, "base_atk": 5,
+			"composition": {"huangjin_zu": 10}, "gold_total": 15, "after": ["triselect"]},
+		{"idx": 2, "duration": 28, "base_hp": 17, "base_atk": 6,
+			"composition": {"huangjin_zu": 12, "huangjin_gongshou": 3}, "gold_total": 18, "after": ["triselect", "event_biandaduyou"]},
+		{"idx": 3, "duration": 30, "base_hp": 19, "base_atk": 6,
+			"composition": {"huangjin_zu": 14, "huangjin_gongshou": 4, "huangjin_lishi": 2}, "gold_total": 20, "after": ["triselect"]},
+		{"idx": 4, "duration": 32, "base_hp": 22, "base_atk": 7,
+			"composition": {"huangjin_zu": 16, "huangjin_gongshou": 6, "huangjin_lishi": 3}, "gold_total": 22, "after": ["triselect", "event_sanrangxuzhou", "shop"]},
+		{"idx": 5, "duration": 34, "base_hp": 24, "base_atk": 8,
+			"composition": {"huangjin_zu": 20, "huangjin_gongshou": 7, "huangjin_lishi": 4}, "gold_total": 25, "after": ["triselect"]},
+		{"idx": 6, "duration": 36, "base_hp": 26, "base_atk": 8,
+			"composition": {"huangjin_zu": 22, "huangjin_gongshou": 8, "huangjin_lishi": 5}, "gold_total": 26, "after": ["triselect", "event_hulaoguan", "shop"]},
+		{"idx": 7, "duration": 38, "base_hp": 28, "base_atk": 9,
+			"composition": {"huangjin_zu": 25, "huangjin_gongshou": 9, "huangjin_lishi": 6}, "gold_total": 28, "after": ["triselect"]},
+		{"idx": 8, "duration": 45, "base_hp": 30, "base_atk": 10,
+			"composition": {"huaxiong": 1},
+			"reinforcement": {"enemy": "huangjin_zu", "count": 4, "interval": 10.0},
+			"gold_total": 30, "after": ["victory"]}
+	]
+}

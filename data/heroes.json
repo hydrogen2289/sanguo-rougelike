@@ -1,0 +1,70 @@
+{
+	"heroes": [
+		{
+			"id": "liubei", "name": "刘备", "is_lord": true,
+			"recruit_source": "initial", "recruit_min_wave": 0,
+			"hp": 110, "atk": 6, "atk_speed": 0.8, "range": 1.5, "move_speed": 4.2,
+			"robe": "deep_green",
+			"skill": {"id": "rende_ze", "name": "仁德之泽", "cd": 10.0, "type": "shield",
+				"radius": 3.5, "shield_amount": 20.0, "shield_duration": 6.0, "heal_amount": 12.0},
+			"trait": {"id": "renzheng", "name": "仁政", "type": "aura", "radius": 4.0, "heal_per_sec": 0.8}
+		},
+		{
+			"id": "guanyu", "name": "关羽", "is_lord": false,
+			"recruit_source": "initial", "recruit_min_wave": 0,
+			"hp": 85, "atk": 14, "atk_speed": 0.9, "range": 1.8, "move_speed": 4.0,
+			"robe": "spring_green",
+			"skill": {"id": "qinglong_sweep", "name": "青龙偃月·扫", "cd": 8.0, "type": "cone",
+				"angle_deg": 120, "radius": 3.0, "dmg_mult": 2.5, "knockback": 1.0},
+			"trait": {"id": "tuodao", "name": "拖刀计", "type": "execution", "threshold_ratio": 0.15, "boss_immune": true}
+		},
+		{
+			"id": "zhangfei", "name": "张飞", "is_lord": false,
+			"recruit_source": "initial", "recruit_min_wave": 0,
+			"hp": 90, "atk": 12, "atk_speed": 0.9, "range": 1.4, "move_speed": 3.9,
+			"robe": "dark_green",
+			"skill": {"id": "dangyang_roar", "name": "当阳桥吼", "cd": 12.0, "type": "nova",
+				"radius": 3.0, "dmg_mult": 1.8, "knockback": 3.0, "stun": 1.0,
+				"self_dr": 0.30, "self_dr_duration": 2.0},
+			"trait": {"id": "yanren_kuangnu", "name": "燕人狂怒", "type": "enrage",
+				"enter_ratio": 0.35, "exit_ratio": 0.50, "atk_speed_mult": 1.40, "range_mult": 1.30,
+				"roar_interval": 5.0, "roar_radius": 2.0, "roar_knockback": 2.0}
+		},
+		{
+			"id": "zhaoyun", "name": "赵云", "is_lord": false,
+			"recruit_source": "triselect", "recruit_min_wave": 2,
+			"hp": 75, "atk": 13, "atk_speed": 1.1, "range": 1.6, "move_speed": 4.4,
+			"robe": "white",
+			"skill": {"id": "qijin_qichu", "name": "七进七出", "cd": 9.0, "type": "dash",
+				"radius": 6.0, "dmg_mult": 1.5, "invuln": 0.8}
+		},
+		{
+			"id": "zhuge", "name": "诸葛亮", "is_lord": false,
+			"recruit_source": "triselect", "recruit_min_wave": 4,
+			"hp": 60, "atk": 9, "atk_speed": 0.7, "range": 5.0, "move_speed": 4.0,
+			"robe": "paper",
+			"skill": {"id": "jie_dongfeng", "name": "借东风", "cd": 15.0, "type": "weather",
+				"duration": 10.0, "burn_tick_dmg": 2.0, "burn_tick": 0.5, "burn_duration": 3.0,
+				"fire_dmg_pct": 0.30}
+		},
+		{
+			"id": "huatuo", "name": "华佗", "is_lord": false,
+			"recruit_source": "triselect", "recruit_min_wave": 3,
+			"hp": 65, "atk": 7, "atk_speed": 0.7, "range": 1.2, "move_speed": 3.8,
+			"robe": "spring_green",
+			"skill": {"id": "miaoshou", "name": "妙手回春", "cd": 12.0, "type": "heal_all",
+				"heal_amount": 20.0},
+			"trait": {"id": "qingnang", "name": "青囊光环", "type": "aura", "radius": 3.0, "heal_per_sec": 1.5}
+		},
+		{
+			"id": "lvbu", "name": "吕布", "is_lord": false,
+			"recruit_source": "event", "recruit_min_wave": 6,
+			"hp": 90, "atk": 30, "atk_speed": 1.0, "range": 2.0, "move_speed": 4.5,
+			"robe": "cinnabar",
+			"skill": {"id": "fangtian_wu", "name": "方天乱舞", "cd": 10.0, "type": "triple_nova",
+				"radius": 3.5, "dmg_mult": 1.2, "hits": 3},
+			"trait": {"id": "bushouling", "name": "不受令", "type": "disobey",
+				"chance": 0.30, "delay": 3.0, "dmg_mult": 1.5}
+		}
+	]
+}

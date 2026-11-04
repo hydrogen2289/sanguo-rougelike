@@ -1,0 +1,20 @@
+{
+	"relics": [
+		{"id": "qinggang_sword", "name": "青釭剑", "rarity": "epic", "price": 60,
+			"effects": {"atk_pct": 0.20}, "desc": "全队攻击 +20%"},
+		{"id": "chitu_horse", "name": "赤兔马", "rarity": "rare", "price": 40,
+			"effects": {"move_pct": 0.20, "lord_move_pct": 0.05}, "desc": "全队移速 +20%,主公额外 +5%"},
+		{"id": "taiping_yaoshu", "name": "太平要术", "rarity": "epic", "price": 60,
+			"effects": {"cd_reduction": 0.20}, "desc": "全体技能 CD -20%"},
+		{"id": "yuxi", "name": "玉玺", "rarity": "epic", "price": 60,
+			"effects": {"maxhp_pct": 0.20}, "desc": "全队 HP 上限 +20%"},
+		{"id": "sunzi_bingfa", "name": "孙子兵法", "rarity": "rare", "price": 40,
+			"effects": {"atk_pct": 0.12}, "desc": "全队攻击 +12%"},
+		{"id": "liannu_tu", "name": "连弩图", "rarity": "normal", "price": 25,
+			"effects": {"atk_speed_pct": 0.15}, "desc": "全队攻速 +15%"},
+		{"id": "shuanggu_jian", "name": "双股剑", "rarity": "normal", "price": 25,
+			"effects": {"lord_dmg_reduction": 0.15, "lord_maxhp_flat": 20}, "desc": "主公受到伤害 -15%,主公 HP 上限 +20"},
+		{"id": "qingnang_shu", "name": "青囊书", "rarity": "rare", "price": 40,
+			"effects": {"heal_pct": 0.30}, "desc": "全部治疗与护盾效果 +30%"}
+	]
+}

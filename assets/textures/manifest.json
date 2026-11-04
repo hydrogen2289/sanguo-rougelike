@@ -1,0 +1,230 @@
+{
+  "count": 37,
+  "files": [
+    {
+      "h": 512,
+      "path": "ground/ground_paper.png",
+      "seed": 20352203,
+      "w": 512
+    },
+    {
+      "h": 320,
+      "path": "units/liubei.png",
+      "seed": 20347459,
+      "w": 320
+    },
+    {
+      "h": 320,
+      "path": "units/guanyu.png",
+      "seed": 20271202,
+      "w": 320
+    },
+    {
+      "h": 320,
+      "path": "units/zhangfei.png",
+      "seed": 20346901,
+      "w": 320
+    },
+    {
+      "h": 320,
+      "path": "units/zhaoyun.png",
+      "seed": 20316823,
+      "w": 320
+    },
+    {
+      "h": 320,
+      "path": "units/zhuge.png",
+      "seed": 20270604,
+      "w": 320
+    },
+    {
+      "h": 320,
+      "path": "units/huatuo.png",
+      "seed": 20288703,
+      "w": 320
+    },
+    {
+      "h": 320,
+      "path": "units/lvbu.png",
+      "seed": 20316802,
+      "w": 320
+    },
+    {
+      "h": 256,
+      "path": "units/huangjin_zu.png",
+      "seed": 20306603,
+      "w": 256
+    },
+    {
+      "h": 256,
+      "path": "units/huangjin_gongshou.png",
+      "seed": 20280134,
+      "w": 256
+    },
+    {
+      "h": 256,
+      "path": "units/huangjin_lishi.png",
+      "seed": 20321109,
+      "w": 256
+    },
+    {
+      "h": 256,
+      "path": "units/xiliang_qinwei.png",
+      "seed": 20342817,
+      "w": 256
+    },
+    {
+      "h": 448,
+      "path": "units/huaxiong.png",
+      "seed": 20288236,
+      "w": 448
+    },
+    {
+      "h": 128,
+      "path": "fx/slash.png",
+      "seed": 20309807,
+      "w": 128
+    },
+    {
+      "h": 128,
+      "path": "fx/ring.png",
+      "seed": 20268324,
+      "w": 128
+    },
+    {
+      "h": 128,
+      "path": "fx/heal.png",
+      "seed": 20333070,
+      "w": 128
+    },
+    {
+      "h": 64,
+      "path": "fx/arrow.png",
+      "seed": 20277727,
+      "w": 64
+    },
+    {
+      "h": 128,
+      "path": "icons/relics/qinggang_sword.png",
+      "seed": 20343261,
+      "w": 128
+    },
+    {
+      "h": 128,
+      "path": "icons/relics/chitu_horse.png",
+      "seed": 20261120,
+      "w": 128
+    },
+    {
+      "h": 128,
+      "path": "icons/relics/taiping_yaoshu.png",
+      "seed": 20342119,
+      "w": 128
+    },
+    {
+      "h": 128,
+      "path": "icons/relics/yuxi.png",
+      "seed": 20308498,
+      "w": 128
+    },
+    {
+      "h": 128,
+      "path": "icons/relics/sunzi_bingfa.png",
+      "seed": 20284482,
+      "w": 128
+    },
+    {
+      "h": 128,
+      "path": "icons/relics/liannu_tu.png",
+      "seed": 20305394,
+      "w": 128
+    },
+    {
+      "h": 128,
+      "path": "icons/relics/shuanggu_jian.png",
+      "seed": 20341094,
+      "w": 128
+    },
+    {
+      "h": 128,
+      "path": "icons/relics/qingnang_shu.png",
+      "seed": 20269893,
+      "w": 128
+    },
+    {
+      "h": 96,
+      "path": "icons/skills/rende_ze.png",
+      "seed": 20307135,
+      "w": 96
+    },
+    {
+      "h": 96,
+      "path": "icons/skills/qinglong_sweep.png",
+      "seed": 20355093,
+      "w": 96
+    },
+    {
+      "h": 96,
+      "path": "icons/skills/dangyang_roar.png",
+      "seed": 20281039,
+      "w": 96
+    },
+    {
+      "h": 96,
+      "path": "icons/skills/qijin_qichu.png",
+      "seed": 20309543,
+      "w": 96
+    },
+    {
+      "h": 96,
+      "path": "icons/skills/jie_dongfeng.png",
+      "seed": 20341874,
+      "w": 96
+    },
+    {
+      "h": 96,
+      "path": "icons/skills/miaoshou.png",
+      "seed": 20336632,
+      "w": 96
+    },
+    {
+      "h": 96,
+      "path": "icons/skills/fangtian_wu.png",
+      "seed": 20291270,
+      "w": 96
+    },
+    {
+      "h": 64,
+      "path": "icons/coin.png",
+      "seed": 20300411,
+      "w": 64
+    },
+    {
+      "h": 128,
+      "path": "ui/panel_paper.png",
+      "seed": 20340539,
+      "w": 128
+    },
+    {
+      "h": 256,
+      "path": "ui/scroll_bg.png",
+      "seed": 20332651,
+      "w": 1024
+    },
+    {
+      "h": 96,
+      "path": "ui/btn_seal.png",
+      "seed": 20291420,
+      "w": 96
+    },
+    {
+      "h": 512,
+      "path": "ui/vignette.png",
+      "seed": 20349146,
+      "w": 512
+    }
+  ],
+  "generator": "tools/gen_textures.gd",
+  "icon": "res://icon.png",
+  "seed": 20261103
+}

@@ -1,0 +1,43 @@
+{
+	"prologue": {
+		"title": "桃园结义",
+		"lines": [
+			"乱世滔滔,黄巾四起,天下大乱。",
+			"涿郡桃园之中,刘备、关羽、张飞三人焚香再拜,结为异姓兄弟:",
+			"「不求同年同月同日生,只愿同年同月同日死。」",
+			"探马来报:黄巾贼部已近——主公,整队迎敌!"
+		]
+	},
+	"events": [
+		{
+			"id": "biandaduyou", "name": "鞭打督邮", "wave": 2,
+			"story": "督邮安喜县索贿作威,三弟怒不可遏,绳缚缚于马桩之上。",
+			"option_a": {"label": "让三弟出气",
+				"effect": {"zhangfei_atk_pct": 0.15, "team_hp_loss": 10},
+				"desc": "张飞攻击 +15%(本场),全队当前 HP -10"},
+			"option_b": {"label": "主公劝阻",
+				"effect": {"gold": 15},
+				"desc": "获得 15 军资"}
+		},
+		{
+			"id": "sanrangxuzhou", "name": "三让徐州", "wave": 4,
+			"story": "陶谦病笃,三让徐州于刘备,州吏百姓皆相劝进。",
+			"option_a": {"label": "受领徐州",
+				"effect": {"team_maxhp_flat": 10, "this_run": true},
+				"desc": "全队 HP 上限 +10(本场)"},
+			"option_b": {"label": "婉言相辞",
+				"effect": {"random_relic": "normal|rare"},
+				"desc": "随机获得 1 件普通/稀有遗物"}
+		},
+		{
+			"id": "hulaoguan", "name": "虎牢关·飞将来投", "wave": 6,
+			"story": "三英战吕布,飞将见刘关张武义双全,心内暗许:「若得明主,愿效死力!」",
+			"option_a": {"label": "花 60 军资招募吕布",
+				"effect": {"recruit": "lvbu", "cost_gold": 60},
+				"desc": "队伍未满时可选"},
+			"option_b": {"label": "谢绝好意",
+				"effect": {"gold": 10},
+				"desc": "获得 10 军资"}
+		}
+	]
+}
