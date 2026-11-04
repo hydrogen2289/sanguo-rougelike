@@ -1,0 +1,11 @@
+# 统一行尾，确保 Linux (Instabox) 上脚本/源码可正确执行
+* text=auto
+
+# 明确按 LF 存储与检出（Godot 源码 + 工具脚本）
+*.sh       text eol=lf
+*.gd       text eol=lf
+*.tscn     text eol=lf
+*.gdshader text eol=lf
+*.json     text eol=lf
+*.md       text eol=lf
+*.godot    text eol=lf
