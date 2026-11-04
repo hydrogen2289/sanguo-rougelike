@@ -255,6 +255,39 @@ func _run() -> void:
 	check(_hud_slots_unique(hud6, 5), "存活武将 5 人 → HUD 槽 1~5 各恰一唯一绑定")
 	battle6.free()
 
+	# --- 实机回归:台词浮字混入 Units/Heroes 导致 wave_director 读 .dead 报错 ---
+	RunState.reset(891)
+	var battleQ = (load(BATTLE_SCENE) as PackedScene).instantiate()
+	_st.root.add_child(battleQ)
+	var heroesQ := battleQ.get_node("Units/Heroes")
+	var vfxQ := battleQ.get_node("VFX")
+	var gyQ := _hero_of(battleQ, "guanyu")
+	check(gyQ != null, "前置:关羽在 Heroes 容器内")
+	Quips._last_ms = -100000          # 绕过 5s 全局限频,确保台词真实 spawn
+	Quips.say(gyQ, "燕人张飞在此!")
+	var in_heroes := 0
+	var in_vfx := 0
+	for c in heroesQ.get_children():
+		if c is FloatText:
+			in_heroes += 1
+	for c in vfxQ.get_children():
+		if c is FloatText:
+			in_vfx += 1
+	check(in_heroes == 0, "台词浮字不污染 Units/Heroes 容器(根因修复)")
+	check(in_vfx == 1, "台词浮字挂到 battle/VFX")
+	# 防御层:人为把非单位节点插到队首,查人与 HUD 绑定仍须完好
+	var stray := Label3D.new()
+	heroesQ.add_child(stray)
+	heroesQ.move_child(stray, 0)
+	var dQ := battleQ.get_node("WaveDirector")
+	var hudQ := battleQ.get_node("HUDLayer/HUD")
+	hudQ._bound.clear()
+	check(dQ._unit_of("guanyu") == gyQ, "容器混入 Label3D 后仍能正确查到关羽")
+	dQ._sync_team_units()
+	check(_hud_slots_unique(hudQ, 2), "容器混入 Label3D 后 HUD 槽 1~2 重新绑定完好")
+	stray.free()
+	battleQ.free()
+
 	# --- P2-② 回归:远程普攻命中效果移到弹道真正命中(东风灼烧挂空/双重附加)---
 	RunState.reset(890)
 	var battle8 = (load(BATTLE_SCENE) as PackedScene).instantiate()

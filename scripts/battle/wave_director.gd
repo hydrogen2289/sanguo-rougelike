@@ -134,6 +134,9 @@ func _unit_of(hero_id: String) -> Node:
 	if heroes_root == null:
 		return null
 	for u in heroes_root.get_children():
+		# 跳过误挂进来的浮字/VFX 等非单位节点(否则读 .unit_id 会 SCRIPT ERROR)
+		if not is_instance_valid(u) or not (u is UnitBase):
+			continue
 		if str(u.unit_id) == hero_id:
 			return u
 	return null
@@ -467,7 +470,8 @@ func _bind_hud_skills() -> void:
 	if heroes_root == null:
 		return
 	for u in heroes_root.get_children():
-		if not is_instance_valid(u) or u.dead:
+		# 跳过误挂进来的浮字/Label3D 等非单位节点(否则读 .dead 会 SCRIPT ERROR)
+		if not is_instance_valid(u) or not (u is UnitBase) or u.dead:
 			continue
 		if u.get("skill_comp") == null:
 			continue
