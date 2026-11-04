@@ -10,11 +10,21 @@
 #   你添加公钥后, 第 2 次运行: 检测到已认证 -> clone 仓库 -> 安装 Godot -> 完成
 #
 # 说明:
+#   - 本脚本针对你的【私有仓库】hydrogen2289/sanguo-rougelike，需在 Instabox 上
+#     生成【你自己的】SSH key (无 passphrase) 并添加到 GitHub 账户，不能用其他机器的 key。
 #   - 本脚本只负责"拉起开发环境", 不改动你的游戏代码。
 #   - Instabox 免费档空闲 30 分钟自动暂停, 但持久盘保留数据, 重连后重跑本脚本即可 (仓库已存在会改为 pull)。
 #   - Godot 编辑器在云端多为软件渲染, 进桌面请用:  godot --rendering-driver opengl3
 #
 set -euo pipefail
+
+# ---------- 0. 依赖检查 ----------
+for cmd in git ssh ssh-keygen; do
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    echo "!! 缺少必需命令: $cmd，请先在 Instabox 上安装 (apt-get install -y git openssh-client)"
+    exit 1
+  fi
+done
 
 REPO_SSH="git@github.com:hydrogen2289/sanguo-rougelike.git"
 REPO_DIR="$HOME/sanguo-rougelike"
@@ -31,7 +41,7 @@ else
 fi
 
 # ---------- 2. 测试 GitHub SSH 认证 ----------
-if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -T git@github.com 2>&1 | grep -q authenticated; then
+if ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10 -T git@github.com 2>&1 | grep -q authenticated; then
   echo "==> GitHub SSH 认证已通过"
 else
   echo ""
