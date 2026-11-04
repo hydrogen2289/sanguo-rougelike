@@ -10,8 +10,10 @@
 #   你添加公钥后, 第 2 次运行: 检测到已认证 -> clone 仓库 -> 安装 Godot -> 完成
 #
 # 说明:
-#   - 本脚本针对你的【私有仓库】hydrogen2289/sanguo-rougelike，需在 Instabox 上
-#     生成【你自己的】SSH key (无 passphrase) 并添加到 GitHub 账户，不能用其他机器的 key。
+#   - 本脚本针对你的【公开仓库】hydrogen2289/sanguo-rougelike (已核实 API private:false)：
+#     clone 匿名即可、无需认证；但 push(写操作) 仍需把本机 key 加到 GitHub 账户或用 token。
+#   - 若日后在 GitHub 将其改为私有，请在 Instabox 上生成【你自己的】SSH key (无 passphrase)
+#     并添加到 GitHub 账户，不能用其他机器的 key。
 #   - 本脚本只负责"拉起开发环境", 不改动你的游戏代码。
 #   - Instabox 免费档空闲 30 分钟自动暂停, 但持久盘保留数据, 重连后重跑本脚本即可 (仓库已存在会改为 pull)。
 #   - Godot 编辑器在云端多为软件渲染, 进桌面请用:  godot --rendering-driver opengl3
