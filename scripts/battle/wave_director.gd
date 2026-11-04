@@ -153,7 +153,8 @@ func _process(delta: float) -> void:
 			spawn_t += delta
 			while not spawn_queue.is_empty() and float(spawn_queue[0]["t"]) <= spawn_t:
 				var item: Dictionary = spawn_queue.pop_front()
-				spawner.spawn_enemy(str(item["id"]), float(wave_data["base_hp"]), float(wave_data["base_atk"]))
+				var arc: Array = item.get("arc", [])
+				spawner.spawn_enemy(str(item["id"]), float(wave_data["base_hp"]), float(wave_data["base_atk"]), arc)
 			if spawn_queue.is_empty():
 				_enter_state(State.BATTLE)
 		State.BATTLE:
@@ -197,11 +198,19 @@ func _enter_state(s: State) -> void:
 					UiTheme.col("cinnabar", Color(0.71, 0.29, 0.23)), 56)
 				EventBus.screen_shake.emit(0.55, 0.9)
 			else:
-				EventBus.wave_banner.emit("第 %d 波" % wave_idx, PRELUDE_SECS)
+				var title := "第 %d 波" % wave_idx
+				var theme := str(wave_data.get("theme", ""))
+				if theme != "":
+					title += " · " + theme
+				EventBus.wave_banner.emit(title, PRELUDE_SECS)
 			Sfx.play("horn", -6.0)
 			_build_spawn_queue()
 		State.SPAWNING:
 			spawn_t = 0.0
+			# 关卡目标提示(docs/03 §2);W8 保留 Boss 出场演出,不覆盖横幅
+			var obj: Dictionary = wave_data.get("objective", {})
+			if wave_idx < DataDB.waves.size() and not obj.is_empty():
+				EventBus.wave_banner.emit("目标 · " + str(obj.get("label", "")), 1.8)
 		State.BATTLE:
 			battle_t = 0.0
 		State.INTERMISSION:
@@ -354,9 +363,24 @@ func _show_defeat_result_if_ended() -> void:
 
 # ---------------------------------------------------------------- 波次流程
 
-## 按构成均匀刷新;普通敌在前、精英压后 → 精英出现在波次中点之后(01 §6)
+## 关卡剧本(docs/03 §2):优先按 spawn_plan 分批 + 扇区投放;
+## 无剧本的旧数据回退「均匀刷新,普通敌在前、精英压后」(向后兼容)。
+## 两种口径都保证队列按 t 升序,且在 duration*SPAWN_WINDOW 内投完(平衡模拟对齐)。
 func _build_spawn_queue() -> void:
 	spawn_queue = []
+	var plan: Dictionary = wave_data.get("spawn_plan", {})
+	var batches: Array = plan.get("batches", [])
+	if not batches.is_empty():
+		var default_arc: Array = plan.get("arc", [])
+		for b in batches:
+			var t := float(b.get("t", 0.0))
+			var arc: Array = b.get("arc", default_arc)
+			var spawn: Dictionary = b.get("spawn", {})
+			for id in spawn:
+				for i in int(spawn[id]):
+					spawn_queue.append({"t": t, "id": str(id), "arc": arc})
+		spawn_queue.sort_custom(func(a, b): return float(a["t"]) < float(b["t"]))
+		return
 	var comp: Dictionary = wave_data.get("composition", {})
 	var total := 0
 	for id in comp:
@@ -416,8 +440,9 @@ func _tick_reinforce(delta: float) -> void:
 		return
 	reinforce_t -= float(rf.get("interval", 10.0))
 	var count := int(rf.get("count", 4))
+	var arc: Array = rf.get("arc", [])
 	for i in count:
-		spawner.spawn_enemy(str(rf.get("enemy", "huangjin_zu")), float(wave_data["base_hp"]), float(wave_data["base_atk"]))
+		spawner.spawn_enemy(str(rf.get("enemy", "huangjin_zu")), float(wave_data["base_hp"]), float(wave_data["base_atk"]), arc)
 
 ## 敌兵死亡回调:第 8 波 Boss 阵亡 → 立即胜利(增援/召唤物在场也算,01 §3 杀华雄才结束)
 func _on_enemy_died(unit: Node) -> void:

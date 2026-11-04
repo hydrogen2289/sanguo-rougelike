@@ -1,22 +1,120 @@
 {
+	"arc_convention": "0°=+X(东) 90°=+Z(南) ±180°=-X(西) -90°=-Z(北);arc 为刷怪扇区 [起,止]",
 	"waves": [
-		{"idx": 1, "duration": 25, "base_hp": 15, "base_atk": 5,
-			"composition": {"huangjin_zu": 10}, "gold_total": 15, "after": ["triselect"]},
-		{"idx": 2, "duration": 28, "base_hp": 17, "base_atk": 6,
-			"composition": {"huangjin_zu": 12, "huangjin_gongshou": 3}, "gold_total": 18, "after": ["triselect", "event_biandaduyou"]},
-		{"idx": 3, "duration": 30, "base_hp": 19, "base_atk": 6,
-			"composition": {"huangjin_zu": 14, "huangjin_gongshou": 4, "huangjin_lishi": 2}, "gold_total": 20, "after": ["triselect"]},
-		{"idx": 4, "duration": 32, "base_hp": 22, "base_atk": 7,
-			"composition": {"huangjin_zu": 16, "huangjin_gongshou": 6, "huangjin_lishi": 3}, "gold_total": 22, "after": ["triselect", "event_sanrangxuzhou", "shop"]},
-		{"idx": 5, "duration": 34, "base_hp": 24, "base_atk": 8,
-			"composition": {"huangjin_zu": 20, "huangjin_gongshou": 7, "huangjin_lishi": 4}, "gold_total": 25, "after": ["triselect"]},
-		{"idx": 6, "duration": 36, "base_hp": 26, "base_atk": 8,
-			"composition": {"huangjin_zu": 22, "huangjin_gongshou": 8, "huangjin_lishi": 5}, "gold_total": 26, "after": ["triselect", "event_hulaoguan", "shop"]},
-		{"idx": 7, "duration": 38, "base_hp": 28, "base_atk": 9,
-			"composition": {"huangjin_zu": 25, "huangjin_gongshou": 9, "huangjin_lishi": 6}, "gold_total": 28, "after": ["triselect"]},
-		{"idx": 8, "duration": 45, "base_hp": 30, "base_atk": 10,
+		{
+			"idx": 1, "duration": 25, "base_hp": 15, "base_atk": 5,
+			"theme": "桃园初阵", "objective": {"type": "clear", "label": "结阵初战，熟悉走位与自动索敌"},
+			"composition": {"huangjin_zu": 8},
+			"spawn_plan": {
+				"arc": [-180, 180],
+				"batches": [
+					{"t": 0.0, "spawn": {"huangjin_zu": 3}},
+					{"t": 5.0, "spawn": {"huangjin_zu": 3}, "arc": [45, 135]},
+					{"t": 10.0, "spawn": {"huangjin_zu": 2}}
+				]
+			},
+			"gold_total": 15, "after": ["triselect"]
+		},
+		{
+			"idx": 2, "duration": 28, "base_hp": 16, "base_atk": 5,
+			"theme": "安喜箭雨", "objective": {"type": "clear", "label": "弓手延后自北来袭，先近战后拉开距离"},
+			"composition": {"huangjin_zu": 9, "huangjin_gongshou": 2},
+			"spawn_plan": {
+				"arc": [-180, 180],
+				"batches": [
+					{"t": 0.0, "spawn": {"huangjin_zu": 5}},
+					{"t": 7.0, "spawn": {"huangjin_zu": 4}, "arc": [45, 135]},
+					{"t": 13.0, "spawn": {"huangjin_gongshou": 2}, "arc": [-135, -45]}
+				]
+			},
+			"gold_total": 18, "after": ["triselect", "event_biandaduyou"]
+		},
+		{
+			"idx": 3, "duration": 30, "base_hp": 18, "base_atk": 6,
+			"theme": "涿郡重锤", "objective": {"type": "elite", "label": "力士压轴登场，留技能打断其近身"},
+			"composition": {"huangjin_zu": 11, "huangjin_gongshou": 3, "huangjin_lishi": 1},
+			"spawn_plan": {
+				"arc": [-180, 180],
+				"batches": [
+					{"t": 0.0, "spawn": {"huangjin_zu": 6}},
+					{"t": 7.0, "spawn": {"huangjin_zu": 5, "huangjin_gongshou": 3}, "arc": [45, 135]},
+					{"t": 14.0, "spawn": {"huangjin_lishi": 1}, "arc": [45, 135]}
+				]
+			},
+			"gold_total": 20, "after": ["triselect"]
+		},
+		{
+			"idx": 4, "duration": 32, "base_hp": 20, "base_atk": 6,
+			"theme": "徐州让印", "objective": {"type": "clear", "label": "两路分批压上，别被弓手钉在原地"},
+			"composition": {"huangjin_zu": 14, "huangjin_gongshou": 5, "huangjin_lishi": 2},
+			"spawn_plan": {
+				"arc": [-180, 180],
+				"batches": [
+					{"t": 0.0, "spawn": {"huangjin_zu": 6}},
+					{"t": 6.0, "spawn": {"huangjin_zu": 4, "huangjin_gongshou": 2}, "arc": [-45, 45]},
+					{"t": 12.0, "spawn": {"huangjin_zu": 4, "huangjin_gongshou": 3}, "arc": [-135, -45]},
+					{"t": 15.0, "spawn": {"huangjin_lishi": 2}, "arc": [45, 135]}
+				]
+			},
+			"gold_total": 22, "after": ["triselect", "event_sanrangxuzhou", "shop"]
+		},
+		{
+			"idx": 5, "duration": 34, "base_hp": 22, "base_atk": 7,
+			"theme": "两翼合围", "objective": {"type": "pincer", "label": "南北两翼夹击，往空侧拉扯再回身"},
+			"composition": {"huangjin_zu": 17, "huangjin_gongshou": 6, "huangjin_lishi": 3},
+			"spawn_plan": {
+				"arc": [-180, 180],
+				"batches": [
+					{"t": 0.0, "spawn": {"huangjin_zu": 5, "huangjin_gongshou": 2}, "arc": [45, 135]},
+					{"t": 6.0, "spawn": {"huangjin_zu": 6}, "arc": [-135, -45]},
+					{"t": 12.0, "spawn": {"huangjin_zu": 6, "huangjin_gongshou": 4, "huangjin_lishi": 1}, "arc": [45, 135]},
+					{"t": 16.0, "spawn": {"huangjin_lishi": 2}, "arc": [-135, -45]}
+				]
+			},
+			"gold_total": 25, "after": ["triselect"]
+		},
+		{
+			"idx": 6, "duration": 36, "base_hp": 24, "base_atk": 8,
+			"theme": "虎牢前哨", "objective": {"type": "clear", "label": "三批递进，攒好技能迎第三批"},
+			"composition": {"huangjin_zu": 19, "huangjin_gongshou": 7, "huangjin_lishi": 4},
+			"spawn_plan": {
+				"arc": [-180, 180],
+				"batches": [
+					{"t": 0.0, "spawn": {"huangjin_zu": 6, "huangjin_gongshou": 2}, "arc": [-45, 45]},
+					{"t": 6.0, "spawn": {"huangjin_zu": 6, "huangjin_lishi": 1}, "arc": [-135, -45]},
+					{"t": 12.0, "spawn": {"huangjin_zu": 7, "huangjin_gongshou": 5}, "arc": [45, 135]},
+					{"t": 17.0, "spawn": {"huangjin_lishi": 3}, "arc": [-45, 45]}
+				]
+			},
+			"gold_total": 26, "after": ["triselect", "event_hulaoguan", "shop"]
+		},
+		{
+			"idx": 7, "duration": 38, "base_hp": 27, "base_atk": 9,
+			"theme": "都督亲卫", "objective": {"type": "survive", "label": "三面合围，保主公撑到计时结束"},
+			"composition": {"huangjin_zu": 22, "huangjin_gongshou": 9, "huangjin_lishi": 5},
+			"spawn_plan": {
+				"arc": [-180, 180],
+				"batches": [
+					{"t": 0.0, "spawn": {"huangjin_zu": 7, "huangjin_gongshou": 3}, "arc": [-45, 45]},
+					{"t": 6.0, "spawn": {"huangjin_zu": 7, "huangjin_lishi": 2}, "arc": [-135, -45]},
+					{"t": 12.0, "spawn": {"huangjin_zu": 8, "huangjin_gongshou": 6, "huangjin_lishi": 2}, "arc": [45, 135]},
+					{"t": 18.0, "spawn": {"huangjin_lishi": 1}, "arc": [135, 180]}
+				]
+			},
+			"gold_total": 28, "after": ["triselect"]
+		},
+		{
+			"idx": 8, "duration": 45, "base_hp": 30, "base_atk": 10,
+			"theme": "华雄·都督之威", "objective": {"type": "boss", "label": "斩华雄方可收兵，计时到不会自动胜利"},
 			"composition": {"huaxiong": 1},
-			"reinforcement": {"enemy": "huangjin_zu", "count": 4, "interval": 10.0},
-			"gold_total": 30, "after": ["victory"]}
+			"spawn_plan": {
+				"arc": [-30, 30],
+				"batches": [
+					{"t": 0.0, "spawn": {"huaxiong": 1}}
+				]
+			},
+			"reinforcement": {"enemy": "huangjin_zu", "count": 4, "interval": 10.0, "arc": [120, 180]},
+			"gold_total": 30, "after": ["victory"]
+		}
 	]
 }

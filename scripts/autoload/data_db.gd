@@ -229,25 +229,86 @@ func _validate_waves() -> void:
 		enemy_ids[str(e.get("id", ""))] = true
 	for i in waves.size():
 		var w: Dictionary = waves[i]
+		var wid := str(w.get("idx", "?"))
 		_need(w, ["idx", "duration", "base_hp", "base_atk", "composition", "gold_total"], "waves", i)
 		if int(w.get("idx", -1)) != i + 1:
-			_err("waves", i, str(w.get("idx", "?")), "idx 应为 %d(顺序排列)" % (i + 1))
+			_err("waves", i, wid, "idx 应为 %d(顺序排列)" % (i + 1))
 		_range("waves", i, w, "duration", 25, 45)       # 单波时长锚点(02 §9)
 		_range("waves", i, w, "base_hp", 15, 30)        # 敌兵基础 HP 锚点(01 §6)
 		_range("waves", i, w, "base_atk", 3, 12)
 		_range("waves", i, w, "gold_total", 15, 30)     # 波掉落锚点(01 §6)
 		var comp: Dictionary = w.get("composition", {})
 		if comp.is_empty():
-			_err("waves", i, str(w.get("idx", "?")), "composition 为空")
+			_err("waves", i, wid, "composition 为空")
 		for id in comp:
 			if not enemy_ids.has(str(id)):
-				_err("waves", i, str(w.get("idx", "?")), "composition 引用不存在的敌人 '%s'" % str(id))
+				_err("waves", i, wid, "composition 引用不存在的敌人 '%s'" % str(id))
 			if int(comp[id]) <= 0:
-				_err("waves", i, str(w.get("idx", "?")), "敌人 %s 数量非法" % str(id))
+				_err("waves", i, wid, "敌人 %s 数量非法" % str(id))
 		for a in w.get("after", []):
 			var s := str(a)
 			if s != "triselect" and s != "shop" and s != "victory" and not s.begins_with("event_"):
-				_err("waves", i, str(w.get("idx", "?")), "after 队列含未知项 '%s'" % s)
+				_err("waves", i, wid, "after 队列含未知项 '%s'" % s)
+		# --- 关卡剧本校验(docs/03-关卡设计.md §2):主题/目标/分批投放/扇区 ---
+		if w.has("theme") and str(w["theme"]).is_empty():
+			_err("waves", i, wid, "theme 为空字符串")
+		if w.has("objective"):
+			var obj: Dictionary = w.get("objective", {})
+			if str(obj.get("type", "")).is_empty() or str(obj.get("label", "")).is_empty():
+				_err("waves", i, wid, "objective 缺 type/label")
+		var plan: Dictionary = w.get("spawn_plan", {})
+		if not plan.is_empty():
+			var default_arc: Array = plan.get("arc", [])
+			_validate_arc(i, default_arc, wid)
+			var batches: Array = plan.get("batches", [])
+			if batches.is_empty():
+				_err("waves", i, wid, "spawn_plan.batches 为空")
+			var sums := {}
+			var last_t := -1.0
+			var max_t := float(w.get("duration", 30)) * 0.5   # 与 SPAWN_WINDOW 一致
+			for bi in batches.size():
+				var b: Dictionary = batches[bi]
+				var t := float(b.get("t", -1.0))
+				if t < 0.0 or t > max_t:
+					_err("waves", i, wid, "批次 %d t=%.1f 越出投放窗口 [0, %.1f]" % [bi, t, max_t])
+				if t < last_t:
+					_err("waves", i, wid, "批次 %d 时间非单调(%.1f < %.1f)" % [bi, t, last_t])
+				last_t = t
+				_validate_arc(i, b.get("arc", default_arc), wid)
+				var sp: Dictionary = b.get("spawn", {})
+				if sp.is_empty():
+					_err("waves", i, wid, "批次 %d spawn 为空" % bi)
+				for id in sp:
+					if not enemy_ids.has(str(id)):
+						_err("waves", i, wid, "批次 %d 引用不存在的敌人 '%s'" % [bi, str(id)])
+					if int(sp[id]) <= 0:
+						_err("waves", i, wid, "批次 %d 敌人 %s 数量非法" % [bi, str(id)])
+					sums[str(id)] = int(sums.get(str(id), 0)) + int(sp[id])
+			for id in comp:
+				if int(sums.get(str(id), 0)) != int(comp[id]):
+					_err("waves", i, wid, "spawn_plan 与 composition 数量不一致: %s" % str(id))
+			for id in sums:
+				if not comp.has(str(id)):
+					_err("waves", i, wid, "spawn_plan 多出 composition 未声明的敌人: %s" % str(id))
+		var rf: Dictionary = w.get("reinforcement", {})
+		if rf.has("arc"):
+			_validate_arc(i, rf.get("arc", []), wid)
+
+## arc 必须为 [起,止] 且 -180 <= 起 < 止 <= 180;空数组由调用方按全向处理。
+func _validate_arc(row: int, arc, wid: String) -> void:
+	if arc == null:
+		return
+	if not (arc is Array):
+		_err("waves", row, wid, "arc 应为 [起,止] 数组")
+		return
+	var a: Array = arc
+	if a.size() != 2:
+		_err("waves", row, wid, "arc 长度应为 2")
+		return
+	var lo := float(a[0])
+	var hi := float(a[1])
+	if lo < -180.0 or hi > 180.0 or lo >= hi:
+		_err("waves", row, wid, "arc=[%.1f,%.1f] 非法(应 -180<=起<止<=180)" % [lo, hi])
 
 func _validate_relics() -> void:
 	if relics.is_empty():

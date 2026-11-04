@@ -2,6 +2,7 @@ class_name Spawner
 extends RefCounted
 ## 生成器(M1):敌人 / 武将 / 军资,由 WaveDirector 驱动。
 ## 场景懒加载(避免 --script 测试模式下强依赖导入缓存)。
+## 关卡设计(v0.2):spawn_enemy 接受可选扇区 arc,按 waves.json spawn_plan 分方向投放。
 
 var battle: Node = null
 var director: Node = null
@@ -19,7 +20,8 @@ func spawn_hero(hero_id: String, formation_index: int) -> Node:
 	u.bind_lord(battle.get_node("Units/PlayerLord"))
 	return u
 
-func spawn_enemy(enemy_id: String, base_hp: float, base_atk: float) -> Node:
+## arc = [起,止](度,见 docs/03-关卡设计.md §2);空数组 = 全向环形。
+func spawn_enemy(enemy_id: String, base_hp: float, base_atk: float, arc: Array = []) -> Node:
 	# Boss 走专属场景(boss_huaxiong.tscn,02 §2 目录树);其余敌兵走 enemy.tscn
 	var scene_path := "res://scenes/units/enemy.tscn"
 	var ed: Dictionary = DataDB.enemy_by_id(enemy_id)
@@ -35,7 +37,7 @@ func spawn_enemy(enemy_id: String, base_hp: float, base_atk: float) -> Node:
 	u.battle = battle
 	u.gold_director = director
 	battle.get_node("Units/Enemies").add_child(u)
-	u.global_position = ring_position()
+	u.global_position = ring_position(arc)
 	return u
 
 func spawn_gold(value: int, pos: Vector3) -> Node:
@@ -49,10 +51,15 @@ func spawn_gold(value: int, pos: Vector3) -> Node:
 		RunState.rng.randf_range(-0.4, 0.4), 0.0, RunState.rng.randf_range(-0.4, 0.4))
 	return g
 
-## 敌人环形刷在相机视野外约 2m(01 §6):以主公为心,半径 12~15m,夹回战场内
-func ring_position() -> Vector3:
+## 敌人环形刷在相机视野外约 2m(01 §6):以主公为心,半径 12~15m,夹回战场内。
+## arc 为 [起,止] 度时只在该扇区取样(0°=+X 东,90°=+Z 南,-90°=-Z 北)。
+func ring_position(arc: Array = []) -> Vector3:
 	var lord: Node3D = battle.get_node("Units/PlayerLord")
-	var ang := RunState.rng.randf() * TAU
+	var ang: float
+	if arc.size() == 2:
+		ang = deg_to_rad(RunState.rng.randf_range(float(arc[0]), float(arc[1])))
+	else:
+		ang = RunState.rng.randf() * TAU
 	var r := RunState.rng.randf_range(12.0, 15.0)
 	var p := lord.global_position + Vector3(cos(ang) * r, 0.0, sin(ang) * r)
 	p.x = clampf(p.x, -19.0, 19.0)
