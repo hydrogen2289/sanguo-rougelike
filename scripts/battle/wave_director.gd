@@ -83,11 +83,24 @@ func _instantiate_ui(path: String) -> Control:
 		return null
 	return ps.instantiate()
 
-## 保证队伍里每个存活成员都有场上单位(开局 / 三选一新武将 / 事件招募 / F6 招满共用)
+## 保证队伍里每个存活成员都有场上单位(开局 / 三选一新武将 / 事件招募 / F6 招满共用);
+## 05 §3 换人:场上不再在队内的武将(被替换离队)同步离场回收(leave_team,非阵亡口径)。
 func _sync_team_units() -> void:
 	var lord := battle.get_node_or_null("Units/PlayerLord")
 	if lord != null:
 		lord.battle = battle
+	# 被替换离队者回收:在场上但已不在 RunState.team(或已标记阵亡前的替换)
+	var heroes_root := battle.get_node_or_null("Units/Heroes")
+	if heroes_root != null:
+		for u in heroes_root.get_children():
+			if not is_instance_valid(u) or not (u is UnitBase) or bool(u.get("dead")):
+				continue
+			if str(u.get("unit_id")) == "liubei":
+				continue
+			var m: Dictionary = RunState.member(str(u.unit_id))
+			if m.is_empty() or not bool(m.get("alive", false)):
+				if u.has_method("leave_team"):
+					u.leave_team()
 	_alloc_hero_slots()
 	for m in RunState.team:
 		if not bool(m.alive):

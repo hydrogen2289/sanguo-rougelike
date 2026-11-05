@@ -1,7 +1,7 @@
 extends SceneTree
 ## 自测入口(02 §9):godot.cmd --headless --path <工程> --script res://tests/run_all.gd
 ## 汇总执行全部测试套件;任一失败退出码非 0。
-## M3/M4:原 5 套件转正;关卡设计 v0.2 增 test_levels(第 6 套件),0 跳过全绿。
+## 现 7 套件:原 5 套件 + test_rig(3D 立牌表现升级) + test_levels(关卡剧本 v0.2);0 跳过全绿。
 ## 注意:--script 模式下 ProjectSettings autoload 不自动实例化 ——
 ## 此处先手动把五个 autoload 挂到 /root(名称与注册名一致),
 ## 之后经 load() 加载的套件/场景脚本里全局标识符(RunState/DataDB/…)方可解析;

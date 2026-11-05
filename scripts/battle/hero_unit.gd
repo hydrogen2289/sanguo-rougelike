@@ -19,6 +19,13 @@ var _roar_t := 0.0
 var _aura_t := 0.0
 var _base_atk_interval := 1.0
 var _base_atk_range := 1.5
+# --- 魏延「反骨/狂骨」(03 §3.3,数值占位) ---
+var _fangu_applied := false
+var _frenzy_mult := 0.0        # >0 = 狂骨攻速 buff 生效中(skill_component 驱动到期还原)
+# --- 03 第三批个性机制状态(05 §2)---
+var _backstab_mult := 0.0      # 甘宁背袭:>0 = 下次普攻一次性乘区(arm_backstab 武装/consume 清零)
+var _jinfan_mult := 0.0        # 甘宁锦帆:>0 = 击杀移速 buff 生效中
+var _luoyi_on := false         # 许褚裸衣:HP<50% 减伤 30% 生效中(_tick_trait 切换)
 
 func _ready() -> void:
 	add_to_group("friendlies")
@@ -30,14 +37,38 @@ func _ready() -> void:
 	skill_comp = get_node_or_null("Skill")
 	if skill_comp != null:
 		skill_comp.setup(self)
-	_apply_sprite()
+	_apply_rig()
 	# 遗物/强化/事件修饰符变动 → 存量单位即时刷新(01 §8/§9)
 	RunState.mods_changed.connect(refresh_stats)
+	# 击杀触发类被动(03 第三批):周瑜「英物」点燃杀减 CD / 甘宁「锦帆」击杀移速
+	var tt := str(_trait_data.get("type", ""))
+	if tt == "burn_kill_cd" or tt == "kill_burst_move":
+		EventBus.enemy_died.connect(_on_enemy_died_passive)
 
-func _apply_sprite() -> void:
-	var path := "res://assets/textures/units/%s.png" % unit_id
-	if ResourceLoader.exists(path):
-		apply_visual(load(path), 0.005, 1.0)
+## 击杀触发类被动统一入口(按词条类型分发)
+func _on_enemy_died_passive(unit: Node) -> void:
+	if dead or skill_comp == null or not is_instance_valid(skill_comp):
+		return
+	if unit == null or not is_instance_valid(unit):
+		return
+	match str(_trait_data.get("type", "")):
+		"burn_kill_cd":
+			# 周瑜「英物」(05 §2.4 占位):被点燃的敌人死亡 → 火雨 CD -1s(下限 0)
+			var burning := int(unit.get("burn_ticks_left")) if "burn_ticks_left" in unit else 0
+			if burning > 0:
+				skill_comp.cd_left = maxf(0.0, skill_comp.cd_left - float(_trait_data.get("cd_reduce", 1.0)))
+		"kill_burst_move":
+			# 甘宁「锦帆」(05 §2.3 占位):击杀(最后直伤者是本武将)→ 移速 +20% 持续 3s,刷新不叠加
+			var la = unit.get("last_attacker")
+			if la != null and la.get_ref() == self:
+				apply_jinfan_buff(float(_trait_data.get("move_pct", 0.20)))
+				if skill_comp != null and "_jinfan_left" in skill_comp:
+					skill_comp._jinfan_left = float(_trait_data.get("duration", 3.0))
+				_spawn_float("锦帆!", Color(0.75, 0.4, 0.3))
+
+## 表现升级:程序化拼装 3D 小人(不再加载 units/*.png 当人物本体,贴图仅作 UI 图标)
+func _apply_rig() -> void:
+	apply_visual(1.0)
 
 func bind_lord(l: Node3D) -> void:
 	lord = l
@@ -61,10 +92,115 @@ func refresh_stats() -> void:
 	_base_atk_interval = atk_interval
 	_base_atk_range = atk_range
 	_apply_enrage_multipliers()
+	_apply_fangu_passive()
+	if _frenzy_mult > 0.0:
+		atk_interval = _base_atk_interval / _frenzy_mult   # 狂骨攻速 buff 跨 refresh_stats 保持
+	if _jinfan_mult > 0.0:
+		move_speed *= _jinfan_mult                          # 锦帆移速 buff 跨 refresh_stats 保持
 	if old_max > 0.0 and max_hp > old_max:
 		hp += max_hp - old_max
 	hp = minf(hp, max_hp)
 	_sync_run_state_hp()
+
+## 魏延「反骨」(03 §3.3,占位):攻击 ×1.4、受伤 ×1.25(第一个「双刃」武将)。
+## 攻击乘区在 refresh_stats 尾部叠加(不进 RunState mods,避免污染全队口径);
+## 受伤乘区走 take_damage 内 dmg_taken_mult 钩子(UnitBase 通用字段,敌方无此被动时为 1)。
+func _apply_fangu_passive() -> void:
+	var ttype := str(_trait_data.get("type", ""))
+	if ttype != "fangu":
+		if _fangu_applied:                 # 词条被移除(理论不发生)时还原
+			atk /= float(_trait_data.get("atk_mult", 1.4))
+			dmg_taken_mult = 1.0
+			_fangu_applied = false
+		return
+	if _fangu_applied:
+		return                             # 只叠加一次(refresh_stats 可能多次进入)
+	var am := float(_trait_data.get("atk_mult", 1.4))
+	atk *= am
+	dmg_taken_mult = float(_trait_data.get("dmg_taken_mult", 1.25))
+	_fangu_applied = true
+
+## 狂骨攻速 buff(skill_component 持续期驱动,03 §3.3 占位 ×1.6)
+func apply_frenzy_buff(speed_mult: float) -> void:
+	_frenzy_mult = maxf(_frenzy_mult, speed_mult)
+	atk_interval = _base_atk_interval / _frenzy_mult
+	_spawn_float("狂骨!", Color(0.85, 0.45, 0.28))
+
+func clear_frenzy_buff() -> void:
+	if _frenzy_mult <= 0.0:
+		return
+	_frenzy_mult = 0.0
+	atk_interval = _base_atk_interval
+
+# ---------------------------------------------------------------- 03 第三批个性机制(05 §2,数值占位)
+
+## 甘宁「锦帆」(05 §2.3 占位):击杀敌人后移速 +20% 持续 3s,可叠?否 —— 刷新不叠加。
+## 乘区在 refresh_stats 尾部保持(不进 RunState mods);skill_component 计时到期还原。
+func apply_jinfan_buff(move_pct: float) -> void:
+	var new_mult := 1.0 + maxf(0.0, move_pct)
+	if _jinfan_mult <= 0.0:
+		move_speed *= new_mult   # 首次叠加:即时生效
+	else:
+		move_speed = move_speed / _jinfan_mult * new_mult   # 刷新:按旧乘区先还原再乘新
+	_jinfan_mult = new_mult
+
+func clear_jinfan_buff() -> void:
+	if _jinfan_mult <= 0.0:
+		return
+	move_speed /= _jinfan_mult
+	_jinfan_mult = 0.0
+
+## 甘宁「背袭」:dash 落点武装(skill_component 驱动);下次普攻一次性 ×backstab_mult 后清零
+func arm_backstab(mult: float) -> void:
+	_backstab_mult = maxf(_backstab_mult, mult)
+	_spawn_float("背袭!", Color(0.75, 0.4, 0.3))
+
+## 消耗背袭乘区(普攻命中后);返回本次实际乘区(未武装返回 1.0)
+func consume_backstab() -> float:
+	var m := _backstab_mult
+	if m > 0.0:
+		_backstab_mult = 0.0
+	return m if m > 0.0 else 1.0
+
+## 05 §3 换人规则 1:被换者离队 —— HP/buff/被动全回收,不入阵亡灰化流程,可再抽回。
+## 回收口径:狂骨攻速/锦帆移速/背袭/裸衣减伤/狂化全部还原;反骨乘区随节点销毁消失;
+## 不 mark_casualty(不折将)、不发 hero_died;退场动画复用敌兵 rig 淡出(rig_sink_out)。
+func leave_team() -> void:
+	if dead:
+		return
+	dead = true                      # 让索敌/AI 立即停手(复用 dead 守卫,不走 _die 的阵亡登记)
+	clear_frenzy_buff()
+	clear_jinfan_buff()
+	_backstab_mult = 0.0
+	_luoyi_on = false
+	dr_percent = 0.0
+	apply_enrage_off()
+	remove_from_group("friendlies")
+	remove_from_group("units")
+	collision_layer = 0
+	set_physics_process(false)
+	if skill_comp != null and is_instance_valid(skill_comp):
+		skill_comp.set_physics_process(false)
+	if OS.is_debug_build():
+		print("[Hero] %s 离队入候选池(替换,非阵亡)" % display_name)
+	if is_inside_tree():
+		rig_sink_out(0.5)            # 复用敌兵退场淡出;「折将灰化倒地」不复用(不是阵亡)
+	else:
+		queue_free.call_deferred()
+
+## 张辽「止啼」/ 貂蝉「连环」共用口径(05 §1/§2):敌人处于受控态(恐惧/嘲讽/倒戈/眩晕)时
+## 对其伤害 +15%。静态便于 test_formulas 直测。
+static func controlled_amp(applier_trait: Dictionary, target_controlled: bool) -> float:
+	if not target_controlled:
+		return 1.0
+	if str(applier_trait.get("type", "")) == "controlled_amp":
+		return 1.0 + float(applier_trait.get("dmg_amp", 0.15))
+	return 1.0
+
+## 许褚「裸衣」(05 §2.2 占位):HP < 50% 时自身减伤 30%(进入/退出由 _tick_trait 切换)。
+## 减伤走 dr_percent 通用字段(张飞当阳桥吼同口径),跨 refresh_stats 不受影响。
+static func luoyi_should_on(hp_ratio: float, threshold := 0.5) -> bool:
+	return hp_ratio < threshold
 
 func _sync_run_state_hp() -> void:
 	for m in RunState.team:
@@ -92,7 +228,6 @@ func _move_by_input(delta: float) -> void:
 	if dir.length_squared() > 0.001:
 		velocity = dir.normalized() * move_speed + sep
 		facing = dir.normalized()
-		sprite.flip_h = facing.x < 0.0
 	else:
 		velocity = sep
 	move_and_slide()
@@ -144,6 +279,16 @@ func _tick_trait() -> void:
 					f.heal(amt)    # heal() 内部 × 青囊书 heal_mult
 	elif ttype == "enrage":
 		_tick_enrage()
+	elif ttype == "lowhp_dr":
+		# 许褚「裸衣」(05 §2.2 占位):HP < 50% 减伤 30%;dr_percent 与张飞吼共用,只在本被动内写
+		var on := HeroUnit.luoyi_should_on(hp / maxf(1.0, max_hp), float(_trait_data.get("hp_ratio", 0.5)))
+		if on and not _luoyi_on:
+			_luoyi_on = true
+			dr_percent = float(_trait_data.get("dr", 0.30))
+			_spawn_float("裸衣!", Color(0.85, 0.6, 0.3))
+		elif not on and _luoyi_on:
+			_luoyi_on = false
+			dr_percent = 0.0
 
 ## 燕人狂怒:HP<35% 狂化(攻速+40% 攻距+30%,每 5s 吼退 2m 内敌 2m);HP≥50% 解除(01 §4)
 func _tick_enrage() -> void:
@@ -208,11 +353,19 @@ func _try_attack() -> void:
 		# 出手只生成弹道,不再直调命中回调(原实现会挂空 + 与弹道侧双重附加)
 		_spawn_projectile()
 	else:
-		target.take_damage(UnitBase.compute_damage(atk, 1.0), self)
+		target.take_damage(_attack_damage(target), self)
 		Sfx.play("slash", -10.0)      # 挥砍(M6;Sfx 内限频防刷)
 		_attack_anim()
 		_post_attack_hit(target)      # 近战直伤命中即回调,行为不变
 
+## 普攻伤害合成:背袭一次性乘区(甘宁,05 §2.3)+ 受控增伤共用乘区(止啼/连环,05 §1)
+func _attack_damage(target: Node) -> int:
+	var amp := consume_backstab()
+	var controlled := false
+	if target != null and is_instance_valid(target) and target.has_method("is_controlled"):
+		controlled = bool(target.is_controlled())
+	amp *= HeroUnit.controlled_amp(_trait_data, controlled)
+	return UnitBase.compute_damage(atk, amp)
 ## 普攻命中回调(02 §7.4):拖刀计斩杀 + 东风灼烧附加(01 §4)。
 ## 近战在 _try_attack 直伤后调用;远程由 projectile 真正命中时回调(_on_body_entered)。
 func _post_attack_hit(target: Node) -> void:
@@ -250,10 +403,9 @@ func _attack_anim() -> void:
 	var to: Vector3 = target.global_position - global_position
 	to.y = 0.0
 	var dir: Vector3 = to.normalized() * 0.15 if to.length_squared() > 0.001 else Vector3.ZERO
-	var base_y := sprite.position.y
 	var tw := create_tween()
-	tw.tween_property(sprite, "position", Vector3(dir.x, base_y, dir.z), 0.06)
-	tw.tween_property(sprite, "position", Vector3(0.0, base_y, 0.0), 0.10)
+	tw.tween_property(rig, "position", Vector3(dir.x, 0.0, dir.z), 0.06)
+	tw.tween_property(rig, "position", Vector3(0.0, 0.0, 0.0), 0.10)
 
 ## 死亡:武将灰化倒地 2s 后移除,本局退场不可复活(01 §5 / 02 §7.7)
 func _die() -> void:
@@ -270,11 +422,12 @@ func _die() -> void:
 		# 主公阵亡事件 → 失败结算(WaveDirector 挂 M3)
 		EventBus.lord_died.emit()
 	if is_inside_tree():
-		sprite.modulate = Color(0.45, 0.45, 0.45, 1.0)   # 灰化
+		_set_grayscale()                                   # 灰化(取亮度,原 0.45 灰)
+		rig.rotation.z = PI * 0.5                          # 倒地
+		rig.position.y = 0.15
 		var tw := create_tween()
-		tw.tween_property(sprite, "scale", Vector3(1.3, 0.15, 1.0), 0.4)   # 倒地
 		tw.tween_interval(1.4)
-		tw.tween_property(sprite, "modulate:a", 0.0, 0.4)
+		tw.tween_property(rig, "scale", Vector3.ONE * _rig_scale * 0.05, 0.4)   # 缩到 0
 		tw.tween_callback(queue_free)
 	else:
 		queue_free.call_deferred()

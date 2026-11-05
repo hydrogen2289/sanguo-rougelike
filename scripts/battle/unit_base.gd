@@ -2,12 +2,16 @@ class_name UnitBase
 extends CharacterBody3D
 ## 单位基类:主公/武将/敌兵共用(M1;M4 扩充击退/眩晕/临时减伤/灼烧/直伤)。
 ## 0.2s 决策节拍 + 软分离 + 伤害公式 + 护盾池 + 死亡流程(02 §7)。
+## 表现升级:Sprite3D 立牌 → 程序化拼装 Q 版 3D 低模小人(02 §4),
+## 白闪改为遍历 rig 材质 lerp 到白,灰化改为逐材质取亮度,朝向改为 rig 整体转 Y。
 
 signal died(unit: Node)
 
 const DECISION_TICK := 0.2            # 决策节拍 0.2s(01 §3 / 02 §7.10)
 const SEPARATION_RADIUS := 0.9
 const KB_DURATION := 0.3              # 击退冲量 0.3s 内衰减(01 §3)
+const FLASH_TIME := 0.10              # 受击白闪时长(约 0.08~0.12s)
+const TURN_SPEED := 10.0              # 平滑转向速率(每秒弧度插值系数)
 
 @export var unit_id := ""
 @export var is_lord := false
@@ -33,18 +37,21 @@ var kb_vel := Vector3.ZERO            # 击退冲量速度
 var kb_left := 0.0
 var stun_left := 0.0                  # 眩晕:禁 AI 与普攻(01 §3)
 var dr_percent := 0.0                 # 临时减伤(张飞当阳桥吼 2s 30%)
+var dmg_taken_mult := 1.0             # 受伤乘区(魏延「反骨」1.25,03 §3.3;默认 1 不影响他人)
 var burn_ticks_left := 0              # 灼烧 dot(东风附加,独立结算 01 §3/§4)
 var burn_tick_dmg := 0.0
 var burn_interval := 0.5
 var burn_t := 0.0
+var last_attacker: WeakRef = null     # 最近一次直伤来源(甘宁「锦帆」击杀移速判定,03 第三批)
 
 var _atk_cd := 0.0
 var _tick_t := 0.0
 var _walk_t := 0.0
-var _sprite_y := 0.8
-var _flash_mat: ShaderMaterial
+var _body_y := 0.0                    # 走路浮动基准(rig 根 y)
+var _flash_tween: Tween
+var _rig_scale := 1.0                 # scale_mult 语义保留(力士/Boss 体格)
 
-@onready var sprite: Sprite3D = $Sprite
+@onready var rig: Node3D = $Rig
 
 ## 伤害公式(01 §3):最终伤害 = max(1, round(攻击力 × 技能倍率))
 static func compute_damage(atk_v: float, mult: float) -> int:
@@ -72,27 +79,71 @@ func setup_from_data(d: Dictionary) -> void:
 
 func _ready() -> void:
 	add_to_group("units")
-	_sprite_y = sprite.position.y
 	# MeleeRange 形状按本单位攻距重建(子资源为同场景实例共享,不能直接改)
 	var shape_node: CollisionShape3D = $MeleeRange/MeleeShape
 	var sphere := SphereShape3D.new()
 	sphere.radius = maxf(0.5, atk_range)
 	shape_node.shape = sphere
 
-## 设置立牌贴图并按贴图高度对齐脚底(02 §4)
-func apply_visual(texture: Texture2D, px_size := 0.005, scale_mult := 1.0) -> void:
-	sprite.texture = texture
-	sprite.pixel_size = px_size
-	sprite.scale = Vector3.ONE * scale_mult
-	var h := texture.get_height() * px_size * scale_mult
-	sprite.position.y = h * 0.5
-	_sprite_y = h * 0.5
-	# 受击白闪:hit_flash.gdshader 以 material_overlay 挂在 Sprite3D 上
-	_flash_mat = ShaderMaterial.new()
-	_flash_mat.shader = load("res://shaders/hit_flash.gdshader")
-	_flash_mat.set_shader_parameter("base_tex", texture)
-	_flash_mat.set_shader_parameter("flash_strength", 0.0)
-	sprite.material_overlay = _flash_mat
+## 程序化拼装 3D 小人(替代原立牌贴图;保留函数名以最小化调用方改动)。
+## rig 已在 tscn 中由 build 脚本挂好,此处只做 scale_mult 体格与浮动基准。
+func apply_visual(scale_mult := 1.0) -> void:
+	_rig_scale = scale_mult
+	rig.scale = Vector3.ONE * scale_mult
+	_body_y = 0.0
+
+## 遍历 rig 收集 MeshInstance3D(rig 缺失时返回空)
+func rig_meshes() -> Array:
+	if rig == null:
+		return []
+	return rig.find_children("*", "MeshInstance3D", true, false)
+
+## 受击白闪:所有 mesh albedo 临时 lerp 到白再还原(替代 hit_flash shader 贴 Sprite3D)
+func _hit_flash() -> void:
+	if not is_inside_tree():
+		return
+	var meshes := rig_meshes()
+	if meshes.is_empty():
+		return
+	if _flash_tween != null and _flash_tween.is_valid():
+		_flash_tween.kill()
+		for m in meshes:   # 上次闪烁未收尾,先还原基色
+			_set_mesh_tint(m, 0.0)
+	for m in meshes:
+		_set_mesh_tint(m, 1.0)
+	_flash_tween = create_tween()
+	_flash_tween.tween_method(_set_flash_strength, 1.0, 0.0, FLASH_TIME)
+
+## t:1.0 全白 → 0.0 原色(按 meta base_albedo 还原)
+func _set_flash_strength(t: float) -> void:
+	for m in rig_meshes():
+		_set_mesh_tint(m, t)
+
+func _set_mesh_tint(m: MeshInstance3D, t: float) -> void:
+	var mat: StandardMaterial3D = m.material_override
+	if mat == null:
+		return
+	var base: Color = m.get_meta("base_albedo", mat.albedo_color)
+	mat.albedo_color = base.lerp(Color.WHITE, t)
+
+## 灰化(阵亡):所有材质 albedo 转灰度(取亮度)并压到 0.45 明度,原 0.45 灰效果
+func _set_grayscale() -> void:
+	for m in rig_meshes():
+		var mat: StandardMaterial3D = m.material_override
+		if mat == null:
+			continue
+		var c := mat.albedo_color
+		var l: float = (c.r + c.g + c.b) / 3.0 * 0.45   # 亮度近似( Godot Color 无 luminance)
+		mat.albedo_color = Color(l, l, l, c.a)
+
+## 死亡退场公共实现:沉入地面 + 缩放到 0 后自毁(子类死亡/退场流程复用)
+func rig_sink_out(dur := 0.9) -> Tween:
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(rig, "position:y", -0.55, dur).set_ease(Tween.EASE_IN)
+	tw.tween_property(rig, "scale", Vector3.ONE * 0.05 * _rig_scale, dur).set_ease(Tween.EASE_IN)
+	tw.chain().tween_callback(queue_free)
+	return tw
 
 func _physics_process(delta: float) -> void:
 	if dead:
@@ -119,9 +170,12 @@ func _move(delta: float) -> void:
 func _animate(delta: float) -> void:
 	if velocity.length_squared() > 0.5:
 		_walk_t += delta * velocity.length()
-		sprite.position.y = _sprite_y + absf(sin(_walk_t * 3.0)) * 0.05
+		rig.position.y = _body_y + absf(sin(_walk_t * 3.0)) * 0.05
 	else:
-		sprite.position.y = _sprite_y
+		rig.position.y = _body_y
+	# 平滑转向:rig 面朝本地 +Z,rotation.y = atan2(dir.x, dir.z) 时 +Z 恰指向 dir
+	var target_yaw := atan2(facing.x, facing.z)
+	rig.rotation.y = lerp_angle(rig.rotation.y, target_yaw, minf(1.0, TURN_SPEED * delta))
 
 # ---------------------------------------------------------------- 控制(M4)
 
@@ -167,9 +221,12 @@ func _tick_controls(delta: float) -> void:
 func take_damage(amount: float, from: Node = null) -> void:
 	if dead or invincible:
 		return
+	if from != null and is_instance_valid(from):
+		last_attacker = weakref(from)      # 记录直伤来源(锦帆等击杀触发类被动判定)
 	var left := amount
 	if dr_percent > 0.0:
 		left *= (1.0 - clampf(dr_percent, 0.0, 0.9))   # 临时减伤(张飞吼后 2s)
+	left *= dmg_taken_mult                              # 受伤乘区(魏延反骨 ×1.25,03 §3.3)
 	if is_lord:
 		left *= RunState.lord_damage_taken_mult()      # 双股剑等主公减伤(01 §8)
 	if left <= 0.0:
@@ -239,10 +296,7 @@ func executed_by(by: Node = null) -> void:
 	if dead:
 		return
 	_spawn_float("斩!", Color(0.79, 0.66, 0.42))
-	if _flash_mat != null:
-		_flash_mat.set_shader_parameter("flash_strength", 1.0)
-		var tw := create_tween()
-		tw.tween_property(_flash_mat, "shader_parameter/flash_strength", 0.0, 0.3)
+	_hit_flash()
 	hp = 0.0
 	_die()
 
@@ -252,13 +306,6 @@ func _tick_shield(delta: float) -> void:
 		if shield_t <= 0.0:
 			shield_t = 0.0
 			shield = 0.0           # 护盾到期清零(02 §7.4)
-
-func _hit_flash() -> void:
-	if not is_inside_tree() or _flash_mat == null:
-		return
-	_flash_mat.set_shader_parameter("flash_strength", 0.55)
-	var tw := create_tween()
-	tw.tween_property(_flash_mat, "shader_parameter/flash_strength", 0.0, 0.18)
 
 func _spawn_float(text: String, color: Color) -> void:
 	if battle == null or not is_inside_tree():
@@ -295,12 +342,12 @@ func separation_push() -> Vector3:
 func _flat_dist(p: Vector3) -> float:
 	return Vector2(global_position.x - p.x, global_position.z - p.z).length()
 
+## 朝向:记录 facing,rig 平滑转向在 _animate 中统一插值(不再 flip)
 func face_towards(p: Vector3) -> void:
 	var to := p - global_position
 	to.y = 0.0
 	if to.length_squared() > 0.001:
 		facing = to.normalized()
-		sprite.flip_h = facing.x < 0.0
 
 func _clamp_to_arena() -> void:
 	var p := global_position

@@ -1,9 +1,11 @@
 class_name TriSelectPool
 extends RefCounted
-## 三选一卡池(M3,01 §7)。
+## 三选一卡池(M3,01 §7;03 第三批换人规则 1+2,05 §3)。
 ## 类别权重 强化 50 / 遗物 30 / 武将 20;保底 1 张强化卡;
-## 武将门槛 recruit_min_wave(赵云 W2 / 华佗 W3 / 诸葛 W4);队伍满 7 不出武将卡;
-## 遗物池空转强化;武将池空/满员权重转遗物(遗物也空则转强化)。全部随机走 RunState.rng。
+## 武将门槛 recruit_min_wave(赵云 W2 / 华佗 W3 / 诸葛 W4;第三批:周瑜 W3,余 W2);
+## 满员换人规则(05 §3):满员 → 武将卡变「替换卡」(可再出,选定后弹 6 选 1 指定离队者);
+## 阵亡空位 → 该武将卡恢复可出(招募卡,填补空位,不复活本人)。
+## 遗物池空转强化;武将池空(非满员)权重转遗物。全部随机走 RunState.rng。
 
 const WEIGHT_HERO := 20
 const WEIGHT_RELIC := 30
@@ -11,8 +13,7 @@ const WEIGHT_UPGRADE := 50
 const HAND_SIZE := 3
 
 static func hero_candidates(wave_idx: int, team_ids: Array, team_size: int, max_team: int) -> Array:
-	if team_size >= max_team:
-		return []
+	# 05 §3 换人规则:满员后武将卡照出(替换卡),不再因满员清空池
 	var out: Array = []
 	for h in DataDB.heroes:
 		var id := str(h.get("id", ""))
@@ -131,9 +132,18 @@ static func _hero_card(h: Dictionary) -> Dictionary:
 	var t: Dictionary = h.get("trait", {})
 	if not t.is_empty():
 		lines.append("%s:%s" % [str(t.get("name", "")), _trait_desc(t)])
+	# 05 §3 换人规则 1:满员时武将卡为「替换卡」——选定后需指定一名在场武将离队
+	var replace := RunState.team.size() >= RunState.MAX_TEAM and not _team_has_id(str(h.get("id", "")))
 	return {"kind": "hero", "id": str(h.get("id", "")), "name": str(h.get("name", "?")),
 		"desc": "\n".join(PackedStringArray(lines)), "rarity": "",
-		"icon": "res://assets/textures/units/%s.png" % str(h.get("id", ""))}
+		"icon": "res://assets/textures/units/%s.png" % str(h.get("id", "")),
+		"replace": replace}
+
+static func _team_has_id(hero_id: String) -> bool:
+	for m in RunState.team:
+		if str(m.hero_id) == hero_id:
+			return true
+	return false
 
 static func _skill_desc(sk: Dictionary) -> String:
 	match str(sk.get("type", "")):
@@ -151,6 +161,24 @@ static func _skill_desc(sk: Dictionary) -> String:
 			return "全体友军立即回复 %d HP" % int(sk.get("heal_amount", 0))
 		"triple_nova":
 			return "自身周围 %dm 三段斩,每段 %d%% 伤害" % [int(sk.get("radius", 0)), int(float(sk.get("dmg_mult", 1.0)) * 100.0)]
+		# --- 03 第二批 ---
+		"charge":
+			return "向目标突进 %dm,路径敌人受 %d%% 伤害并减速 %d%%(%ds)" % [int(sk.get("distance", 0)), int(float(sk.get("dmg_mult", 1.0)) * 100.0), int(float(sk.get("slow_ratio", 0.0)) * 100.0), int(sk.get("slow_duration", 0))]
+		"snipe":
+			return "射场上 HP 最高的敌人(含 Boss),必中 %d%% 攻击伤害" % int(float(sk.get("dmg_mult", 1.0)) * 100.0)
+		"frenzy":
+			return "%ds 内攻速 +60%%,期间每秒流失 %d HP(不可致死)" % [int(sk.get("duration", 0)), int(sk.get("hp_loss_per_sec", 0))]
+		# --- 03 第三批(05 §2)---
+		"fear":
+			return "半径 %dm 内敌人恐惧 %ds(Boss %ds):逃离且不可攻击" % [int(sk.get("radius", 0)), int(sk.get("fear_duration", 0)), int(float(sk.get("fear_duration", 0)) * float(sk.get("boss_duration_mult", 0.5)))]
+		"taunt":
+			return "半径 %dm 内敌人强制攻击许褚 %ds(Boss %ds)" % [int(sk.get("radius", 0)), int(sk.get("taunt_duration", 0)), int(float(sk.get("taunt_duration", 0)) * float(sk.get("boss_duration_mult", 0.5)))]
+		"dash_assassin":
+			return "向目标突进 %dm,下一次普攻伤害 ×%.1f(背袭)" % [int(sk.get("distance", 0)), float(sk.get("backstab_mult", 2.5))]
+		"fire_rain":
+			return "目标区域 %dm,%d 轮火矢每轮 %d%% 伤害并点燃 %ds" % [int(sk.get("radius", 0)), int(sk.get("rounds", 0)), int(float(sk.get("dmg_mult", 1.0)) * 100.0), int(sk.get("burn_duration", 0))]
+		"charm":
+			return "单体魅惑 %ds(倒戈攻击敌方;Boss 踌躇 %ds 不倒戈)" % [int(sk.get("duration", 0)), int(sk.get("boss_duration", 0))]
 	return ""
 
 static func _trait_desc(t: Dictionary) -> String:
@@ -163,13 +191,39 @@ static func _trait_desc(t: Dictionary) -> String:
 			return "HP < 35%% 狂化:攻速 +40%%、攻距 +30%%"
 		"disobey":
 			return "30%% 概率延迟 3s 生效,伤害 ×1.5"
+		# --- 03 第二批 ---
+		"fangu":
+			# 双刃词条:负面必须明示(03 §4 验收口径)
+			return "攻击 +40%%,受到的伤害 +25%%(反骨:强攻带代价)"
+		# --- 03 第三批(05 §2)---
+		"controlled_amp":
+			return "处于恐惧/嘲讽/倒戈/眩晕状态的敌人受到的伤害 +15%%"
+		"lowhp_dr":
+			return "HP < %d%% 时自身减伤 %d%%" % [int(float(t.get("hp_ratio", 0.5)) * 100.0), int(float(t.get("dr", 0.3)) * 100.0)]
+		"kill_burst_move":
+			return "击杀敌人后移速 +%d%% 持续 %ds(刷新不叠加)" % [int(float(t.get("move_pct", 0.2)) * 100.0), int(t.get("duration", 0))]
+		"burn_kill_cd":
+			return "被点燃的敌人死亡时,火雨 CD -%ds" % int(t.get("cd_reduce", 0))
+		"auraless":
+			return "无被动"
 	return ""
 
 ## 选定即生效(01 §7);返回结果文本(供横幅)
+## 05 §3 换人规则 1:满员时武将卡走 replace_team_member(替换 UI 由 triselect 先行收集离队者)
 static func apply_pick(card: Dictionary) -> String:
+	return apply_pick_with_replace(card, "")
+
+## 带替换的武将入队:replace_id 非空即先让其离队入候选池(可再抽回,不视为阵亡)
+static func apply_pick_with_replace(card: Dictionary, replace_id: String) -> String:
 	match str(card.get("kind", "")):
 		"hero":
-			if RunState.add_team_member(str(card.get("id", ""))):
+			var new_id := str(card.get("id", ""))
+			if replace_id != "":
+				if RunState.replace_team_member(new_id, replace_id):
+					var old_name := str(RunState.member(replace_id).get("name", replace_id))
+					return "「%s」替换「%s」入场,离队者回候选池!" % [str(card.get("name", "")), old_name]
+				return "替换失败(「%s」未能入队)" % str(card.get("name", ""))
+			if RunState.add_team_member(new_id):
 				return "「%s」已入队!" % str(card.get("name", ""))
 			return "队伍已满,「%s」未能入队" % str(card.get("name", ""))
 		"relic":

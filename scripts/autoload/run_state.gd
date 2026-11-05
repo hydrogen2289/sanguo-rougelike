@@ -92,6 +92,35 @@ func member(hero_id: String) -> Dictionary:
 			return m
 	return {}
 
+## 05 §3 满员换人规则 1:满员时替换 —— old_id 离队入「候选池」(可再抽回、不视为阵亡、
+## 不算折将),new_id 入队。数值零跳变:离队者仅移出 team,不进阵亡流程;
+## 离队者的个人 buff/被动全回收口径由 HeroUnit.leave_team 回收(replace UI 驱动),
+## RunState 层只做 roster 变动;main 主公光环只对在场者生效,离队自然失效。
+## 返回 false 的情况:old 不在队 / new 已在队 / old==new / new 非法 id。
+func replace_team_member(new_id: String, old_id: String) -> bool:
+	if old_id == new_id or member(old_id).is_empty():
+		return false
+	if not member(new_id).is_empty():
+		return false
+	var h: Dictionary = DataDB.hero_by_id(new_id)
+	if h.is_empty():
+		return false
+	# 离队:旧成员原位替换(HP 回满值记录新将基础值;存活 true;不进 casualty)
+	var old_name := str(member(old_id).get("name", old_id))
+	var idx := team.find(member(old_id))
+	team.remove_at(idx)
+	team.insert(idx, {
+		"hero_id": new_id,
+		"name": str(h.get("name", new_id)),
+		"max_hp": float(h.get("hp", 60)),
+		"hp": float(h.get("hp", 60)),
+		"alive": true,
+	})
+	team_changed.emit()
+	if OS.is_debug_build():
+		print("[RunState] 换人:「%s」离队入候选池 ←「%s」入场" % [old_name, str(h.get("name", new_id))])
+	return true
+
 func mark_casualty(hero_id: String) -> void:
 	# 武将阵亡 = 本局退场,不可复活(01 §5)
 	var m := member(hero_id)
@@ -105,6 +134,18 @@ func alive_members() -> Array:
 		if bool(m.alive):
 			out.append(m)
 	return out
+
+## 05 §3 换人规则 2:阵亡补位 —— 阵亡武将的 triselect 武将卡恢复可出现在三选一池。
+## hero_candidates 已不排除阵亡者(它只排除在队者),本函数供 UI/测试显式查询:
+## 阵亡的 recruit_source=triselect 武将可再出卡(填补空位,不复活本人)。
+func re_recruitable(hero_id: String) -> bool:
+	var h: Dictionary = DataDB.hero_by_id(hero_id)
+	if h.is_empty() or str(h.get("recruit_source", "")) != "triselect":
+		return false
+	var m := member(hero_id)
+	if m.is_empty():
+		return true          # 不在队(含从未入队、已离队回池)→ 可出卡
+	return not bool(m.get("alive", true))   # 在队且阵亡 → 也可出卡(补位)
 
 # ---------------------------------------------------------------- 遗物 / 强化
 

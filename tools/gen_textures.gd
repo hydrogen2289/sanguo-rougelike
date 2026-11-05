@@ -157,262 +157,1230 @@ func _gen_ground(list: Array) -> void:
 	save(img, "ground/ground_paper.png", list)
 
 # ---------------------------------------------------------------- 角色
+# 卡通立牌模板:4× 超采样消锯齿 + 100 空间坐标 + 分件绘制
+# (落地影/腿靴/袍身/手臂/大头/发/头饰/五官/须髯/兵器)。
+# 角色差异只写在 _unit_specs() 的字典里:袍色、肤色、眼形、眉形、口型、须发、头饰、兵器。
+
+const SS := 4                                  # 超采样倍数
+const OW := 1.75                               # 描边宽度(100 空间单位)
+
+
+
+func e_ell(img: Image, k: float, x: float, y: float, rx: float, ry: float, col: Color, out := true) -> void:
+	if out:
+		oval(img, x * k, y * k, rx * k, ry * k, col, C("dark_brown"), OW * k)
+	else:
+		fill_ellipse(img, x * k, y * k, rx * k, ry * k, col)
+
+func e_cir(img: Image, k: float, x: float, y: float, r: float, col: Color, out := true) -> void:
+	e_ell(img, k, x, y, r, r, col, out)
+
+## 等宽胶囊(四肢/杆):先描边再本色
+func e_limb(img: Image, k: float, ax: float, ay: float, bx: float, by: float, w: float, col: Color) -> void:
+	thick_line(img, ax * k, ay * k, bx * k, by * k, (w + OW * 2.0) * k, C("dark_brown"))
+	thick_line(img, ax * k, ay * k, bx * k, by * k, w * k, col)
+
+func e_line(img: Image, k: float, ax: float, ay: float, bx: float, by: float, w: float, col: Color) -> void:
+	thick_line(img, ax * k, ay * k, bx * k, by * k, w * k, col)
+
+func e_arc(img: Image, k: float, x: float, y: float, r: float, a0: float, a1: float, w: float, col: Color) -> void:
+	arc(img, x * k, y * k, r * k, a0, a1, w * k, col)
+
+func e_rect(img: Image, k: float, x: float, y: float, w: float, h: float, col: Color) -> void:
+	fill_rect(img, x * k, y * k, w * k, h * k, col)
+
+## 锥形弧(飘带/缨穗)
+func e_arc_taper(img: Image, k: float, x: float, y: float, r: float, a0: float, a1: float, w0: float, w1: float, col: Color) -> void:
+	_arc_taper(img, k, x, y, r, a0, a1, w0 + OW * 2.0, w1 + OW * 1.4, C("dark_brown"))
+	_arc_taper(img, k, x, y, r, a0, a1, w0, w1, col)
+
+func _arc_taper(img: Image, k: float, x: float, y: float, r: float, a0: float, a1: float, w0: float, w1: float, col: Color) -> void:
+	var n := int(absf(a1 - a0) * r * k) + 3
+	for i in n:
+		var t := float(i) / float(n - 1)
+		var a := lerpf(a0, a1, t)
+		fill_circle(img, (x + cos(a) * r) * k, (y + sin(a) * r) * k, maxf(0.3, lerpf(w0, w1, t) * 0.5) * k, col)
+
+## 锥形二次贝塞尔(雉鸡翎/衣带)
+func e_bezier(img: Image, k: float, ax: float, ay: float, cx: float, cy: float, bx: float, by: float, w0: float, w1: float, col: Color) -> void:
+	_bezier(img, k, ax, ay, cx, cy, bx, by, w0 + OW * 2.0, w1 + OW * 1.4, C("dark_brown"))
+	_bezier(img, k, ax, ay, cx, cy, bx, by, w0, w1, col)
+
+func _bezier(img: Image, k: float, ax: float, ay: float, cx: float, cy: float, bx: float, by: float, w0: float, w1: float, col: Color) -> void:
+	var n := int(sqrt((bx - ax) * (bx - ax) + (by - ay) * (by - ay)) * k * 1.4) + 4
+	for i in n:
+		var t := float(i) / float(n - 1)
+		var q := Vector2(ax, ay).lerp(Vector2(cx, cy), t).lerp(Vector2(cx, cy).lerp(Vector2(bx, by), t), t)
+		fill_circle(img, q.x * k, q.y * k, maxf(0.3, lerpf(w0, w1, t) * 0.5) * k, col)
+
+## 多边形件(刃/甲/扇):沿轮廓描边后扫描线填充
+func e_poly(img: Image, p: Dictionary, pts: Array, col: Color) -> void:
+	var k := float(p["k"])
+	var ink: Color = p["ink"]
+	var ring: Array = []
+	for pt in pts:
+		ring.append(Vector2(pt.x * k, pt.y * k))
+	for i in ring.size():
+		var a: Vector2 = ring[i]
+		var b: Vector2 = ring[(i + 1) % ring.size()]
+		thick_line(img, a.x, a.y, b.x, b.y, OW * 2.0 * k + 1.0, ink)
+	_fill_poly(img, ring, col)
+
+func _fill_poly(img: Image, pts: Array, col: Color) -> void:
+	var y0 := int(floor(minf(_poly_min_y(pts), 0.0)))
+	var y1 := int(ceil(_poly_max_y(pts)))
+	for y in range(y0, y1 + 1):
+		var xs: Array = []
+		for i in pts.size():
+			var a: Vector2 = pts[i]
+			var b: Vector2 = pts[(i + 1) % pts.size()]
+			if (a.y <= float(y) and b.y > float(y)) or (b.y <= float(y) and a.y > float(y)):
+				xs.append(a.x + float(y - a.y) / (b.y - a.y) * (b.x - a.x))
+		xs.sort()
+		var j := 0
+		while j + 1 < xs.size():
+			for x in range(int(ceil(xs[j])), int(floor(xs[j + 1])) + 1):
+				bpx(img, x, y, col)
+			j += 2
+
+func _poly_min_y(pts: Array) -> float:
+	var m := INF
+	for pt in pts:
+		m = minf(m, pt.y)
+	return m
+
+func _poly_max_y(pts: Array) -> float:
+	var m := -INF
+	for pt in pts:
+		m = maxf(m, pt.y)
+	return m
+
+# ---- 100 空间几何件
+
+func _nrm(ax: float, ay: float, bx: float, by: float) -> Vector2:
+	var d := Vector2(bx - ax, by - ay).normalized()
+	return Vector2(-d.y, d.x)
+
+## 月牙刃:外弧 + 内弧围合
+func g_crescent(cx: float, cy: float, r_out: float, r_in: float, a0: float, a1: float) -> Array:
+	var pts: Array = []
+	for i in 13:
+		var a := lerpf(a0, a1, float(i) / 12.0)
+		pts.append(Vector2(cx + cos(a) * r_out, cy + sin(a) * r_out))
+	for i in 13:
+		var a := lerpf(a1, a0, float(i) / 12.0)
+		pts.append(Vector2(cx + cos(a) * r_in, cy + sin(a) * r_in))
+	return pts
+
+## 弯月渐收刃:根部厚、末端收尖(偃月刀/蛇矛)
+func g_crescent_taper(cx: float, cy: float, r_out: float, r_in0: float, r_in1: float, a0: float, a1: float) -> Array:
+	var pts: Array = []
+	for i in 13:
+		var a := lerpf(a0, a1, float(i) / 12.0)
+		pts.append(Vector2(cx + cos(a) * r_out, cy + sin(a) * r_out))
+	for i in 13:
+		var t := float(i) / 12.0
+		var a := lerpf(a1, a0, t)
+		var r_in := lerpf(r_in1, r_in0, t)
+		pts.append(Vector2(cx + cos(a) * r_in, cy + sin(a) * r_in))
+	return pts
+
+## 弯月透镜刃:两端收尖、中段宽 w(戟耳/斧刃)
+func g_crescent_lens(cx: float, cy: float, r_out: float, w: float, a0: float, a1: float) -> Array:
+	var pts: Array = []
+	for i in 13:
+		var a := lerpf(a0, a1, float(i) / 12.0)
+		pts.append(Vector2(cx + cos(a) * r_out, cy + sin(a) * r_out))
+	for i in 13:
+		var t := float(i) / 12.0
+		var a := lerpf(a1, a0, t)
+		var r_in := r_out - w * sin(PI * t)
+		pts.append(Vector2(cx + cos(a) * r_in, cy + sin(a) * r_in))
+	return pts
+
+## 柳叶刃:两端收尖、中段宽 w
+func g_leaf(ax: float, ay: float, bx: float, by: float, w: float) -> Array:
+	var nrm := _nrm(ax, ay, bx, by)
+	var pts: Array = []
+	for i in 10:
+		var t := float(i) / 9.0
+		var c := Vector2(lerpf(ax, bx, t), lerpf(ay, by, t))
+		pts.append(c + nrm * (sin(PI * t) * w * 0.5))
+	for i in range(9, -1, -1):
+		var t := float(i) / 9.0
+		var c := Vector2(lerpf(ax, bx, t), lerpf(ay, by, t))
+		pts.append(c - nrm * (sin(PI * t) * w * 0.5))
+	return pts
+
+## 刀身:尾宽 w0、尖宽 w1 的四边形
+func g_wedge(ax: float, ay: float, bx: float, by: float, w0: float, w1: float) -> Array:
+	var nrm := _nrm(ax, ay, bx, by)
+	return [
+		Vector2(ax, ay) + nrm * (w0 * 0.5), Vector2(bx, by) + nrm * (w1 * 0.5),
+		Vector2(bx, by) - nrm * (w1 * 0.5), Vector2(ax, ay) - nrm * (w0 * 0.5)
+	]
+
+## 扇形(羽扇/甲片)
+func g_pie(cx: float, cy: float, r: float, a0: float, a1: float) -> Array:
+	var pts: Array = [Vector2(cx, cy)]
+	for i in 15:
+		var a := lerpf(a0, a1, float(i) / 14.0)
+		pts.append(Vector2(cx + cos(a) * r, cy + sin(a) * r))
+	return pts
+
+## 平涂 + 单层阴影 + 高光(01 §11 淡彩三层,纸雕味)
+func e_shade_ell(img: Image, k: float, x: float, y: float, rx: float, ry: float, base: Color) -> void:
+	oval(img, x * k, y * k, rx * k, ry * k, base, C("dark_brown"), OW * k)
+	fill_ellipse(img, x * k, (y + ry * 0.20) * k, rx * 0.90 * k, ry * 0.74 * k, darken(base, 0.20))
+	fill_ellipse(img, (x - rx * 0.12) * k, (y - ry * 0.26) * k, rx * 0.66 * k, ry * 0.50 * k, lighten(base, 0.18))
+
+## 横带(腰带/下摆缘/札甲条/胸甲)
+func g_band(top: float, bot: float, w_top: float, w_bot: float, dip: float) -> Array:
+	return [
+		Vector2(50 - w_top * 0.5, top), Vector2(50 + w_top * 0.5, top),
+		Vector2(50 + w_bot * 0.5, bot), Vector2(50 + w_bot * 0.22, bot + dip),
+		Vector2(50 - w_bot * 0.22, bot + dip), Vector2(50 - w_bot * 0.5, bot)
+	]
+
+## 大袖:沿轴向外张开的管状件
+func g_sleeve(sx: float, sy: float, ex: float, ey: float, w0: float, w1: float) -> Array:
+	var pts: Array = []
+	var n := 7
+	for i in n:
+		var t := float(i) / float(n - 1)
+		pts.append(Vector2(lerpf(sx, ex, t) - lerpf(w0, w1, t) * 0.5, lerpf(sy, ey, t)))
+	for i in range(n - 1, -1, -1):
+		var t := float(i) / float(n - 1)
+		pts.append(Vector2(lerpf(sx, ex, t) + lerpf(w0, w1, t) * 0.5, lerpf(sy, ey, t)))
+	return pts
+
+## 无描边填充
+func f_poly(img: Image, p: Dictionary, pts: Array, col: Color) -> void:
+	var k := float(p["k"])
+	var ring: Array = []
+	for pt in pts:
+		ring.append(Vector2(pt.x * k, pt.y * k))
+	_fill_poly(img, ring, col)
+
+## 渐变多边形:上浅下深,补足淡彩的层次(百炼英雄式体积感)
+func gp_poly(img: Image, p: Dictionary, pts: Array, c_top: Color, c_bot: Color) -> void:
+	var k := float(p["k"])
+	var ink: Color = p["ink"]
+	var ring: Array = []
+	for pt in pts:
+		ring.append(Vector2(pt.x * k, pt.y * k))
+	for i in ring.size():
+		var a: Vector2 = ring[i]
+		var b: Vector2 = ring[(i + 1) % ring.size()]
+		thick_line(img, a.x, a.y, b.x, b.y, OW * 2.0 * k + 1.0, ink)
+	_fill_grad(img, ring, c_top * 1.0, c_bot * 1.0)
+
+func _fill_grad(img: Image, pts: Array, c_top: Color, c_bot: Color) -> void:
+	var ymin := INF
+	var ymax := -INF
+	for pt in pts:
+		ymin = minf(ymin, pt.y)
+		ymax = maxf(ymax, pt.y)
+	if ymax <= ymin + 0.5:
+		_fill_poly(img, pts, c_bot)
+		return
+	for y in range(int(floor(ymin)), int(ceil(ymax)) + 1):
+		var xs: Array = []
+		for i in pts.size():
+			var a: Vector2 = pts[i]
+			var b: Vector2 = pts[(i + 1) % pts.size()]
+			if (a.y <= float(y) and b.y > float(y)) or (b.y <= float(y) and a.y > float(y)):
+				xs.append(a.x + float(y - a.y) / (b.y - a.y) * (b.x - a.x))
+		xs.sort()
+		var t := clampf((float(y) - ymin) / (ymax - ymin), 0.0, 1.0)
+		var col := c_top.lerp(c_bot, t)
+		var j := 0
+		while j + 1 < xs.size():
+			for x in range(int(ceil(xs[j])), int(floor(xs[j + 1])) + 1):
+				bpx(img, x, y, col)
+			j += 2
+
+## 渐变椭圆(头/拳/肩吞:顶部受光、底部压暗)
+func g_ell_grad(img: Image, k: float, x: float, y: float, rx: float, ry: float, base: Color, out := true) -> void:
+	if out:
+		oval(img, x * k, y * k, rx * k, ry * k, base, C("dark_brown"), OW * k)
+	var top := lighten(base, 0.34)
+	var bot := darken(base, 0.16)
+	for i in int(ry * k * 2.0) + 1:
+		var t := float(i) / float(int(ry * k * 2.0))
+		var yy := (y - ry) * k + t * ry * 2.0 * k
+		var w := sqrt(maxf(0.0, 1.0 - pow(t * 2.0 - 1.0, 2.0))) * rx * k
+		if w < 0.5:
+			continue
+		var col := top.lerp(bot, t)
+		for xx in range(int(x * k - w), int(x * k + w) + 1):
+			bpx(img, xx, int(yy), col)
+
+## 尖刺团:外沿锯齿(炸发/虬髯/披风破边)
+func g_spiky(cx: float, cy: float, r_in: float, r_out: float, a0: float, a1: float, n: int, jag := 0.35) -> Array:
+	var pts: Array = []
+	for i in n + 1:
+		var t := float(i) / float(n)
+		var a := lerpf(a0, a1, t)
+		var r := r_out if i % 2 == 1 else lerpf(r_in, r_out, jag)
+		pts.append(Vector2(cx + cos(a) * r, cy + sin(a) * r))
+	for i in range(n, -1, -1):
+		var t := float(i) / float(n)
+		var a := lerpf(a0, a1, t)
+		pts.append(Vector2(cx + cos(a) * r_in, cy + sin(a) * r_in))
+	return pts
+
+## 折线刃(蛇矛/破枪):沿轴向摆动的宽窄带
+func g_serrated(ax: float, ay: float, bx: float, by: float, w: float, waves: float, amp: float) -> Array:
+	var nrm := _nrm(ax, ay, bx, by)
+	var pts: Array = []
+	var n := 9
+	for i in n:
+		var t := float(i) / float(n - 1)
+		var c := Vector2(lerpf(ax, bx, t), lerpf(ay, by, t))
+		var off := sin(t * PI * waves) * amp
+		pts.append(c + nrm * (w * 0.5 + off))
+	for i in range(n - 1, -1, -1):
+		var t := float(i) / float(n - 1)
+		var c := Vector2(lerpf(ax, bx, t), lerpf(ay, by, t))
+		var off := sin(t * PI * waves) * amp
+		pts.append(c - nrm * (w * 0.5 - off * 0.35))
+	return pts
+
+# ---- 规格表:三头身 + 冲镜姿势 + 主色/脸谱/头饰/兵器
 
 func _robe_color(name: String) -> Color:
 	match name:
+		"green": return C("spring_green")
 		"deep_green": return C("deep_green")
-		"dark_green": return darken(C("deep_green"), 0.30)
-		"spring_green": return C("spring_green")
-		"white": return lighten(C("paper"), 0.55)
-		"paper": return mixc(C("paper"), C("paper_dark"), 0.6)
-		"cinnabar": return C("cinnabar")
+		"white": return mixc(C("paper"), Color.WHITE, 0.70)
+		"gold": return C("gold")
+		"cream": return mixc(C("paper"), C("gold"), 0.40)
+		"red": return C("cinnabar")
+		"dark_red": return darken(C("cinnabar"), 0.26)
+		"iron": return mixc(C("dark_brown"), C("deep_green"), 0.42)
+		"black": return mixc(C("dark_brown"), C("deep_green"), 0.68)
+		"cloth": return mixc(C("huangjin"), C("dark_brown"), 0.42)
+		"sand": return mixc(C("huangjin"), C("paper"), 0.26)
+		"jade": return mixc(C("spring_green"), C("paper"), 0.22)
+		"paper": return mixc(C("paper"), C("paper_dark"), 0.42)
+		"dark_brown": return darken(C("dark_brown"), 0.18)   # 魏延深褐战甲(03 §3.3)
+		"blue_robe": return mixc(C("spring_green"), mixc(C("dark_brown"), C("deep_green"), 0.42), 0.5)
+			# 张辽蓝袍(05 §4):spring_green lerp iron,palette 派生不新增 hex
+		"red_dress": return darken(C("cinnabar"), 0.10)
+			# 貂蝉红裙(05 §4):cinnabar 略沉,与吕布正朱砂拉开
+		"": return C("paper")
 		_: return C("spring_green")
 
+func _skin(name: String) -> Color:
+	var base := mixc(C("gold"), Color.WHITE, 0.66)
+	match name:
+		"pale": return mixc(base, C("paper"), 0.14)
+		"tan": return base
+		"red": return mixc(base, C("cinnabar"), 0.52)
+		"dark": return mixc(base, C("dark_brown"), 0.50)
+		"yellow": return mixc(base, C("huangjin"), 0.34)
+		"iron": return mixc(base, C("deep_green"), 0.26)
+		"old": return mixc(base, C("paper"), 0.16)
+		_: return base
+
+func _hair_color(name: String) -> Color:
+	match name:
+		"white": return mixc(C("paper"), Color.WHITE, 0.50)
+		"grey": return mixc(C("paper"), C("dark_brown"), 0.30)
+		"rust": return mixc(C("cinnabar"), C("dark_brown"), 0.42)
+		_: return darken(C("dark_brown"), 0.22)
+
+func _metal(name: String) -> Color:
+	match name:
+		"silver": return mixc(C("paper"), Color.WHITE, 0.55)
+		"gold": return mixc(C("gold"), C("cinnabar"), 0.12)
+		"iron": return mixc(C("dark_brown"), C("paper"), 0.24)
+		"dark": return mixc(C("dark_brown"), C("deep_green"), 0.52)
+		_: return mixc(C("paper"), Color.WHITE, 0.55)
+
+func _unit_specs() -> Array:
+	return [
+		{"id": "liubei", "size": 320, "garment": "pao", "robe": "gold", "trim": "deep_green",
+			"skin": "pale", "hair": "black", "hat": "renwang_guan", "eyes": "fierce2",
+			"brows": "angry", "mouth": "roar", "beard": "none", "weapon": "twin_swords"},
+		{"id": "guanyu", "size": 320, "garment": "pao", "robe": "green", "cape": "deep_green",
+			"trim": "gold", "skin": "red", "hair": "black", "hat": "green_towel",
+			"eyes": "phoenix", "brows": "slant", "mouth": "grit", "beard": "long",
+			"weapon": "guandao"},
+		{"id": "zhangfei", "size": 320, "garment": "armor", "robe": "black", "metal": "iron",
+			"trim": "gold", "skin": "dark", "hair": "rust", "hat": "black_jin",
+			"eyes": "ring", "brows": "thick", "mouth": "roar", "beard": "bushy",
+			"weapon": "serpent_spear"},
+		{"id": "zhaoyun", "size": 320, "garment": "armor", "robe": "white", "metal": "silver",
+			"cape": "white", "trim": "cinnabar", "skin": "pale", "hair": "black",
+			"hat": "silver_helmet", "eyes": "fierce2", "brows": "straight", "mouth": "tight",
+			"beard": "none", "weapon": "tiger_spear"},
+		{"id": "zhuge", "size": 320, "garment": "chang", "robe": "jade", "trim": "gold",
+			"skin": "pale", "hair": "black", "hat": "guan_jin", "eyes": "calm",
+			"brows": "thin", "mouth": "smile", "beard": "goatee", "weapon": "feather_fan"},
+		{"id": "huatuo", "size": 320, "garment": "chang", "robe": "paper", "trim": "green",
+			"skin": "old", "hair": "white", "hat": "old_cap", "eyes": "happy",
+			"brows": "white_bushy", "mouth": "open_smile", "beard": "white_long",
+			"weapon": "gourd"},
+		{"id": "lvbu", "size": 320, "garment": "armor", "robe": "red", "metal": "gold",
+			"cape": "dark_red", "trim": "gold", "skin": "pale", "hair": "black",
+			"hat": "gold_crown", "eyes": "fierce", "brows": "angry", "mouth": "smirk",
+			"beard": "none", "weapon": "halberd"},
+		{"id": "huangjin_zu", "size": 256, "garment": "duan", "robe": "cloth", "trim": "huangjin",
+			"skin": "yellow", "hair": "black", "hat": "yellow_turban", "eyes": "fierce2",
+			"brows": "angry", "mouth": "shout", "beard": "none", "weapon": "cleaver",
+			"foe": true},
+		{"id": "huangjin_gongshou", "size": 256, "garment": "duan", "robe": "sand",
+			"trim": "huangjin", "skin": "yellow", "hair": "black", "hat": "yellow_turban",
+			"eyes": "squint", "brows": "angry", "mouth": "flat", "beard": "none",
+			"weapon": "bow", "foe": true},
+		{"id": "huangjin_lishi", "size": 256, "garment": "bare", "robe": "cloth",
+			"trim": "huangjin", "skin": "tan", "hair": "black", "hat": "topknot",
+			"eyes": "fierce2", "brows": "angry", "mouth": "grit", "beard": "stubble",
+			"weapon": "hammer", "foe": true, "hefty": true},
+		{"id": "xiliang_qinwei", "size": 256, "garment": "armor", "robe": "sand",
+			"metal": "iron", "trim": "cinnabar", "skin": "tan", "hair": "black",
+			"hat": "leather_helm", "eyes": "narrow", "brows": "angry", "mouth": "flat",
+			"beard": "short", "weapon": "spear_shield", "foe": true},
+		{"id": "huaxiong", "size": 448, "garment": "armor", "robe": "black", "metal": "dark",
+			"cape": "black", "trim": "cinnabar", "skin": "iron", "hair": "black",
+			"hat": "iron_helm", "eyes": "glow", "brows": "none", "mouth": "hidden",
+			"beard": "mask", "weapon": "great_axe", "foe": true, "hefty": true},
+		{"id": "machao", "size": 320, "garment": "armor", "robe": "white", "metal": "silver",
+			"trim": "cinnabar", "skin": "pale", "hair": "black",
+			"hat": "lion_helm", "eyes": "fierce2", "brows": "straight", "mouth": "tight",
+			"beard": "none", "weapon": "wide_spear"},
+		{"id": "huangzhong", "size": 320, "garment": "armor", "robe": "iron", "metal": "dark",
+			"trim": "gold", "skin": "old", "hair": "white", "hat": "iron_helm",
+			"eyes": "narrow", "brows": "white_bushy", "mouth": "grit", "beard": "goat",
+			"weapon": "great_bow"},
+		{"id": "weiyan", "size": 320, "garment": "armor", "robe": "dark_brown", "metal": "dark",
+			"trim": "gold", "skin": "red", "hair": "black", "hat": "topknot_gold",
+			"eyes": "fierce", "brows": "slant", "mouth": "smirk", "beard": "stubble",
+			"weapon": "straight_blade"},
+		# --- 03 第三批(05 §4)---
+		{"id": "zhangliao", "size": 320, "garment": "armor", "robe": "blue_robe",
+			"metal": "gold", "trim": "gold", "skin": "pale", "hair": "black",
+			"hat": "none", "eyes": "fierce2", "brows": "straight", "mouth": "tight",
+			"beard": "short", "weapon": "hook_halberd"},
+		{"id": "xuchu", "size": 320, "garment": "bare", "robe": "iron", "metal": "iron",
+			"trim": "gold", "skin": "dark", "hair": "black", "hat": "tiger_helm",
+			"eyes": "ring", "brows": "thick", "mouth": "roar", "beard": "bushy",
+			"weapon": "broad_blade", "hefty": true},
+		{"id": "ganning", "size": 320, "garment": "duan", "robe": "cloth", "trim": "cinnabar",
+			"skin": "tan", "hair": "black", "hat": "red_headwrap", "eyes": "fierce2",
+			"brows": "straight", "mouth": "smirk", "beard": "none",
+			"weapon": "twin_daggers"},
+		{"id": "zhouyu", "size": 320, "garment": "chang", "robe": "paper", "trim": "gold",
+			"skin": "pale", "hair": "black", "hat": "white_lunjin", "eyes": "calm",
+			"brows": "thin", "mouth": "smile", "beard": "none", "weapon": "slim_sword"},
+		{"id": "diaochan", "size": 320, "garment": "chang", "robe": "red_dress",
+			"trim": "gold", "skin": "pale", "hair": "black", "hat": "twin_buns",
+			"eyes": "calm", "brows": "soft", "mouth": "smile", "beard": "none",
+			"weapon": "round_fan"}
+	]
+
+# ---- 身形件(三头身:头大、身短、腿跨步)
+
+## 躯干:上窄下宽 + 底摆波浪,可整体横移 tilt 制造扭转
+func g_torso(top: float, bot: float, tw: float, bw: float, dip: float, cx := 50.0) -> Array:
+	var pts: Array = []
+	var n := 9
+	for i in n:
+		var t := float(i) / float(n - 1)
+		var y := lerpf(top, bot, t)
+		var w := lerpf(tw, bw, t * t * 0.5 + t * 0.5) * 0.5
+		var sway := sin(t * PI * 0.9) * 2.2
+		pts.append(Vector2(cx - w + sway, y))
+	for i in range(1, n):
+		var t := float(i) / float(n - 1)
+		var w := bw * 0.5
+		pts.append(Vector2(cx - w + lerpf(0, w * 2, t) + sin(t * PI) * 1.6, bot + sin(PI * t) * dip))
+	for i in range(n - 1, -1, -1):
+		var t := float(i) / float(n - 1)
+		var y := lerpf(top, bot, t)
+		var w := lerpf(tw, bw, t * t * 0.5 + t * 0.5) * 0.5
+		var sway := sin(t * PI * 0.9) * 2.2
+		pts.append(Vector2(cx + w + sway, y))
+	return pts
+
+## 拳/掌(冲镜的透视夸张:半径比手臂大)
+func g_fist(cx: float, cy: float, r: float) -> Array:
+	var pts: Array = []
+	for i in 13:
+		var a := float(i) / 12.0 * TAU
+		var rr := r * (1.0 + 0.10 * sin(a * 3.0))
+		pts.append(Vector2(cx + cos(a) * rr, cy + sin(a) * rr))
+	return pts
+
+## 肩吞(兽面):圆 + 两侧獠牙
+func gPauldron(cx: float, cy: float, r: float) -> Array:
+	var pts: Array = []
+	for i in 9:
+		var a := PI + float(i) / 8.0 * PI
+		pts.append(Vector2(cx + cos(a) * r, cy + sin(a) * r * 0.9))
+	pts.append(Vector2(cx + r * 1.25, cy + r * 0.35))
+	pts.append(Vector2(cx + r * 0.7, cy + r * 0.95))
+	pts.append(Vector2(cx - r * 0.7, cy + r * 0.95))
+	pts.append(Vector2(cx - r * 1.25, cy + r * 0.35))
+	return pts
+
+# ---- 生成入口
+
 func _gen_units(list: Array) -> void:
-	# 7 武将 320×320(01 §11:识别物两两区分)
-	_gen_hero_stand(list, "liubei", "deep_green", "twin_swords")
-	_gen_hero_stand(list, "guanyu", "spring_green", "guandao")
-	_gen_hero_stand(list, "zhangfei", "dark_green", "spear_zhang")
-	_gen_hero_stand(list, "zhaoyun", "white", "silver_spear")
-	_gen_hero_stand(list, "zhuge", "paper", "fan")
-	_gen_hero_stand(list, "huatuo", "spring_green", "gourd")
-	_gen_hero_stand(list, "lvbu", "cinnabar", "halberd")
-	# 敌兵 256×256(黄巾头巾区分,力士体格 ×1.4)
-	_gen_enemy_stand(list, "huangjin_zu", "knife", false, false)
-	_gen_enemy_stand(list, "huangjin_gongshou", "bow", false, false)
-	_gen_enemy_stand(list, "huangjin_lishi", "hammer", true, false)
-	_gen_enemy_stand(list, "xiliang_qinwei", "spear_x", false, true)
-	# Boss 448×448(面甲 + 大斧,体格 ×1.5)
-	_gen_boss(list)
+	for sp in _unit_specs():
+		_gen_stand(list, sp)
 
-## Q 版两头身武将立牌(大圆头约身高 1/2 + 小椭圆身 + 简笔四肢 + 识别物 + 2px 描边)
-func _gen_hero_stand(list: Array, id: String, robe_tok: String, item: String) -> void:
+func _gen_stand(list: Array, sp: Dictionary) -> void:
+	var size := int(sp.get("size", 320))
+	var k := float(size) / 100.0 * float(SS)
+	var id := str(sp.get("id", ""))
 	rng.seed = seed_for("units/%s.png" % id)
-	var img := new_img(320, 320)
-	var brown := C("dark_brown")
-	var skin := mixc(C("gold"), Color.WHITE, 0.55)
-	var robe := _robe_color(robe_tok)
-	var robe_dark := darken(robe, 0.30)
-	var blade := lighten(C("gold"), 0.35)
-	var green := C("spring_green")
-	# 兵器长杆(画在身体后层)
-	if item in ["guandao", "spear_zhang", "silver_spear", "halberd"]:
-		thick_line(img, 244, 44, 260, 302, 7 if item == "halberd" else 5, brown)
-	# 腿脚
-	fill_rect(img, 143, 266, 13, 34, robe_dark)
-	fill_rect(img, 164, 266, 13, 34, robe_dark)
-	fill_ellipse(img, 149, 302, 12, 6, brown)
-	fill_ellipse(img, 171, 302, 12, 6, brown)
-	# 身体(椭圆袍)+ 描边
-	oval(img, 160, 212, 54, 62, robe, brown)
-	# 腰带
-	fill_rect(img, 112, 236, 96, 10, robe_dark)
-	fill_circle(img, 160, 241, 6, C("gold"))
-	# 手臂 + 手
-	oval(img, 108, 206, 15, 32, robe_dark, brown)
-	oval(img, 212, 206, 15, 32, robe_dark, brown)
-	disc(img, 104, 240, 9, skin, brown)
-	disc(img, 216, 240, 9, skin, brown)
-	# 识别物(手持层)
-	_gen_item(img, item, blade, brown, skin)
-	# 头(大圆,约占身高一半)
-	disc(img, 160, 106, 70, skin, brown)
-	# 发顶
-	fill_ellipse(img, 160, 56, 58, 24, brown)
-	if item == "fan":
-		# 诸葛纶巾:平顶巾
-		fill_ellipse(img, 160, 52, 44, 20, C("deep_green"))
-		fill_rect(img, 138, 26, 44, 26, C("deep_green"))
-		fill_rect(img, 138, 46, 44, 5, C("gold"))
-	# 吕布雉鸡翎
-	if item == "halberd":
-		thick_line(img, 132, 44, 96, 6, 6, C("cinnabar"))
-		thick_line(img, 188, 44, 224, 6, 6, C("cinnabar"))
-		fill_circle(img, 96, 6, 5, C("gold"))
-		fill_circle(img, 224, 6, 5, C("gold"))
-	# 脸:眼/眉/嘴/腮
-	fill_circle(img, 136, 112, 5, brown)
-	fill_circle(img, 184, 112, 5, brown)
-	thick_line(img, 126, 98, 144, 96, 3, brown)
-	thick_line(img, 176, 96, 194, 98, 3, brown)
-	arc(img, 160, 126, 16, 0.4, PI - 0.4, 3, brown)
-	var blush := Color(C("cinnabar").r, C("cinnabar").g, C("cinnabar").b, 0.18)
-	fill_circle(img, 120, 130, 8, blush)
-	fill_circle(img, 200, 130, 8, blush)
-	# 脖领围巾
-	fill_rect(img, 138, 172, 44, 12, green)
-	# 长髯(关羽)/虬髯(张飞)
-	if item == "guandao":
-		oval(img, 160, 182, 26, 40, brown, brown, 0)
-		fill_ellipse(img, 160, 214, 18, 26, brown)
-	elif item == "spear_zhang":
-		fill_circle(img, 138, 172, 16, brown)
-		fill_circle(img, 182, 172, 16, brown)
-		fill_circle(img, 160, 186, 18, brown)
-		fill_ellipse(img, 160, 212, 16, 22, brown)
-	# 青龙偃月刀刃 / 蛇矛头 / 方天戟刃(上层)
-	_gen_item_top(img, item, blade, brown)
+	var img := new_img(size * SS, size * SS)
+	var ink := C("dark_brown")
+	var gold := C("gold")
+	var cin := C("cinnabar")
+	var paper := C("paper")
+	var robe := _robe_color(str(sp.get("robe", "green")))
+	var p := {"k": k, "ink": ink, "gold": gold, "cin": cin, "paper": paper,
+		"steel": mixc(gold, paper, 0.45), "robe": robe, "robe_dark": darken(robe, 0.36),
+		"skin": _skin(str(sp.get("skin", "tan"))),
+		"hair": _hair_color(str(sp.get("hair", "black"))),
+		"metal": _metal(str(sp.get("metal", "silver"))),
+		"cape": _robe_color(str(sp.get("cape", ""))),
+		"hefty": bool(sp.get("hefty", false))}
+	# 地面投影
+	fill_ellipse(img, 50 * k, 96 * k, 20 * k, 3.4 * k, Color(ink.r, ink.g, ink.b, 0.22))
+	if str(sp.get("cape", "")) != "":
+		_cape(img, p)
+	_weapon_back(img, p, str(sp.get("weapon", "")))
+	_legs(img, p, sp)
+	_garment(img, p, sp)
+	_arms(img, p, sp)
+	# 头 + 颈
+	var cx := 47.0
+	var hr := 22.0 if bool(sp.get("hefty", false)) else 21.0
+	e_line(img, k, cx, 44, cx, 52, 9.0, darken(p["skin"], 0.18))
+	var hatted := str(sp.get("hat", "")) in ["silver_helmet", "leather_helm", "iron_helm"]
+	if not hatted:
+		g_ell_grad(img, k, cx - hr + 1.0, 30, 3.4, 4.0, p["skin"])
+		g_ell_grad(img, k, cx + hr - 1.0, 30, 3.4, 4.0, p["skin"])
+	g_ell_grad(img, k, cx, 26, hr, hr * 1.02, p["skin"])
+	_hair(img, p, str(sp.get("hat", "")), cx)
+	_hat(img, p, str(sp.get("hat", "")), cx)
+	_face(img, p, str(sp.get("eyes", "fierce2")), str(sp.get("brows", "angry")),
+		str(sp.get("mouth", "shout")), bool(sp.get("foe", false)), cx)
+	_beard(img, p, str(sp.get("beard", "none")), cx)
+	_weapon_front(img, p, str(sp.get("weapon", "")))
+	img.resize(size, size, Image.INTERPOLATE_LANCZOS)
 	save(img, "units/%s.png" % id, list)
 
-func _gen_item(img: Image, item: String, blade: Color, brown: Color, skin: Color) -> void:
-	var gold := C("gold")
-	match item:
-		"twin_swords":
-			# 刘备双股剑:双手各持一柄
-			thick_line(img, 104, 238, 62, 156, 6, blade)
-			thick_line(img, 216, 238, 258, 156, 6, blade)
-			fill_circle(img, 92, 208, 6, gold)
-			fill_circle(img, 228, 208, 6, gold)
-			thick_line(img, 104, 238, 92, 208, 5, brown)
-			thick_line(img, 216, 238, 228, 208, 5, brown)
-		"fan":
-			# 诸葛亮羽扇
-			oval(img, 96, 186, 22, 36, C("spring_green"), brown)
-			for i in 5:
-				var t := -0.8 + 0.4 * float(i)
-				thick_line(img, 96, 218, 96 + sin(t) * 34, 186 - cos(t) * 32, 2, C("paper_dark"))
-			thick_line(img, 104, 240, 96, 220, 4, brown)
-		"gourd":
-			# 华佗药葫芦(腰间)
-			disc(img, 218, 246, 11, mixc(C("gold"), C("cinnabar"), 0.35), brown)
-			disc(img, 218, 228, 14, mixc(C("gold"), C("cinnabar"), 0.35), brown)
-			thick_line(img, 212, 214, 224, 214, 3, brown)
+# ---- 披风(破边 + 张角)
+
+func _cape(img: Image, p: Dictionary) -> void:
+	var col: Color = p["cape"]
+	var pts: Array = [Vector2(33, 46), Vector2(63, 44)]
+	for i in 6:
+		var t := float(i) / 5.0
+		pts.append(Vector2(lerpf(76, 20, t), 88.0 + (3.4 if i % 2 == 1 else 0.0)))
+	pts.append(Vector2(20, 88))
+	gp_poly(img, p, pts, lighten(col, 0.10), darken(col, 0.34))
+
+# ---- 腿(跨步:前腿直立承重,后腿后蹬)
+
+func _legs(img: Image, p: Dictionary, sp: Dictionary) -> void:
+	var k := float(p["k"])
+	var ink: Color = p["ink"]
+	var paper: Color = p["paper"]
+	var leg: Color = p["robe_dark"]
+	var w := 9.5 if bool(sp.get("hefty", false)) else 8.2
+	e_limb(img, k, 52, 76, 56, 90, w, leg)
+	e_limb(img, k, 44, 76, 36, 89, w * 0.92, darken(leg, 0.12))
+	e_poly(img, p, g_wedge(56, 88, 66, 93, 7.0, 9.0), mixc(ink, paper, 0.10))
+	e_poly(img, p, g_wedge(36, 87, 28, 92, 6.4, 8.4), mixc(ink, paper, 0.06))
+
+# ---- 衣身
+
+func _garment(img: Image, p: Dictionary, sp: Dictionary) -> void:
+	match str(sp.get("garment", "pao")):
+		"armor":
+			_armor(img, p, sp)
+		"chang":
+			_chang(img, p, sp)
+		"duan":
+			_duan(img, p, sp)
+		"bare":
+			_bare(img, p, sp)
+		_:
+			_pao(img, p, sp)
+
+func _pao(img: Image, p: Dictionary, sp: Dictionary) -> void:
+	var k := float(p["k"])
+	var robe: Color = p["robe"]
+	var trim := _robe_color(str(sp.get("trim", "gold")))
+	var top := 46.0
+	var bot := 82.0
+	var tw := 34.0
+	var bw := 48.0
+	gp_poly(img, p, g_torso(top, bot, tw, bw, 3.0), lighten(robe, 0.14), darken(robe, 0.34))
+	e_line(img, k, 40, 46, 48, 60, 3.6, lighten(robe, 0.26))
+	e_line(img, k, 56, 45, 48, 60, 3.6, trim)
+	e_poly(img, p, g_band(63.0, 68.0, 36.0, 40.0, 0.0), darken(robe, 0.48))
+	e_cir(img, k, 48, 65.5, 2.8, trim)
+	e_poly(img, p, g_band(bot - 4.0, bot + 2.4, 44.0, bw, 2.0), trim)
+
+func _armor(img: Image, p: Dictionary, sp: Dictionary) -> void:
+	var k := float(p["k"])
+	var ink: Color = p["ink"]
+	var robe: Color = p["robe"]
+	var metal: Color = p["metal"]
+	var trim: Color = p["cin"] if str(sp.get("trim", "gold")) == "cinnabar" else p["gold"]
+	var top := 46.0
+	var bot := 84.0
+	var tw := 36.0
+	var bw := 46.0
+	gp_poly(img, p, g_torso(top, bot, tw, bw, 2.4), darken(robe, 0.05), darken(robe, 0.42))
+	# 甲裙札条
+	for i in 4:
+		var y := 66.0 + float(i) * 4.4
+		var w := lerpf(tw, bw, ((y - top) / (bot - top)) * 0.9) + 2.0
+		f_poly(img, p, g_band(y, y + 4.0, w, w + 1.6, 1.2), mixc(metal, ink, 0.34))
+	# 胸甲
+	gp_poly(img, p, g_band(46.0, 66.0, 33.0, 40.0, 0.0), lighten(metal, 0.24), darken(metal, 0.30))
+	e_cir(img, k, 48, 56, 6.4, lighten(metal, 0.34))
+	e_cir(img, k, 48, 56, 2.6, trim)
+	e_poly(img, p, g_band(62.0, 67.0, 38.0, 41.0, 0.0), mixc(ink, robe, 0.30))
+	e_cir(img, k, 48, 64.5, 2.8, trim)
+	# 兽面肩吞
+	e_poly(img, p, gPauldron(30, 48, 9.5), mixc(metal, ink, 0.10))
+	e_poly(img, p, gPauldron(66, 46, 9.5), mixc(metal, ink, 0.10))
+	e_cir(img, k, 27.4, 47.0, 1.5, ink, false)
+	e_cir(img, k, 32.6, 47.0, 1.5, ink, false)
+	e_cir(img, k, 63.4, 45.0, 1.5, ink, false)
+	e_cir(img, k, 68.6, 45.0, 1.5, ink, false)
+	e_poly(img, p, g_leaf(24, 52, 20, 58, 3.0), lighten(metal, 0.20))
+	e_poly(img, p, g_leaf(72, 50, 76, 56, 3.0), lighten(metal, 0.20))
+
+func _chang(img: Image, p: Dictionary, sp: Dictionary) -> void:
+	var k := float(p["k"])
+	var robe: Color = p["robe"]
+	var trim := _robe_color(str(sp.get("trim", "gold")))
+	var top := 46.0
+	var bot := 86.0
+	var tw := 34.0
+	var bw := 54.0
+	gp_poly(img, p, g_torso(top, bot, tw, bw, 3.2), lighten(robe, 0.12), darken(robe, 0.30))
+	e_poly(img, p, g_band(47.0, bot + 1.6, 8.0, 11.0, 2.0), trim)
+	e_line(img, k, 44.5, 47, 44.5, 84, 1.3, darken(trim, 0.28))
+	e_line(img, k, 51.5, 47, 51.5, 84, 1.3, darken(trim, 0.28))
+	e_cir(img, k, 48, 55, 2.4, trim)
+	e_bezier(img, k, 48, 57, 45, 66, 46, 76, 2.0, 0.8, trim)
+
+func _duan(img: Image, p: Dictionary, sp: Dictionary) -> void:
+	var k := float(p["k"])
+	var ink: Color = p["ink"]
+	var robe: Color = p["robe"]
+	var trim := _robe_color(str(sp.get("trim", "huangjin")))
+	var top := 46.0
+	var bot := 72.0
+	var tw := 34.0
+	var bw := 40.0
+	gp_poly(img, p, g_torso(top, bot, tw, bw, 1.6), lighten(robe, 0.10), darken(robe, 0.32))
+	e_line(img, k, 41, 46, 49, 58, 3.0, lighten(robe, 0.20))
+	e_poly(img, p, g_band(60.0, 65.0, 36.0, 39.0, 0.0), trim)
+	e_cir(img, k, 48, 62.5, 2.2, darken(trim, 0.32))
+	f_poly(img, p, g_band(67.0, 71.0, 11.0, 12.0, 0.6), darken(robe, 0.28))
+	e_line(img, k, 52, 80, 52, 88, 1.8, trim)
+	e_line(img, k, 40, 80, 36, 87, 1.8, trim)
+
+func _bare(img: Image, p: Dictionary, sp: Dictionary) -> void:
+	var k := float(p["k"])
+	var ink: Color = p["ink"]
+	var skin: Color = p["skin"]
+	var trim := _robe_color(str(sp.get("trim", "huangjin")))
+	var top := 46.0
+	var bot := 74.0
+	var tw := 38.0
+	var bw := 42.0
+	gp_poly(img, p, g_torso(top, bot, tw, bw, 1.4), lighten(skin, 0.16), darken(skin, 0.26))
+	e_arc(img, k, 41, 56, 6.0, PI + 0.3, TAU - 0.3, 1.6, darken(skin, 0.32))
+	e_arc(img, k, 55, 56, 6.0, PI + 0.3, TAU - 0.3, 1.6, darken(skin, 0.32))
+	e_line(img, k, 48, 58, 48, 72, 1.6, darken(skin, 0.24))
+	e_poly(img, p, g_band(62.0, 67.0, 38.0, 40.0, 0.0), trim)
+	var w := lerpf(tw, bw, 0.95)
+	e_poly(img, p, g_band(72.0, 78.0, w * 0.9, 36.0, 1.0), mixc(trim, ink, 0.25))
+
+# ---- 手臂:一手前伸握兵器(透视放大),一手后摆握拳
+
+func _arms(img: Image, p: Dictionary, sp: Dictionary) -> void:
+	var k := float(p["k"])
+	var robe: Color = p["robe"]
+	var metal: Color = p["metal"]
+	var skin: Color = p["skin"]
+	var g := str(sp.get("garment", "pao"))
+	var arm_col := metal if g == "armor" else (robe if g != "bare" else skin)
+	# 后摆臂(画面左)
+	e_limb(img, k, 33, 50, 24, 62, 8.0, arm_col)
+	e_poly(img, p, g_fist(22, 66, 6.2), skin)
+	# 前伸臂(画面右,冲镜)
+	e_limb(img, k, 62, 49, 74, 58, 9.2, arm_col)
+	if g == "chang":
+		e_poly(img, p, g_sleeve(60, 46, 76, 58, 14.0, 18.0), robe)
+		e_ell(img, k, 76, 58.5, 8.6, 3.0, lighten(robe, 0.20))
+	elif g != "bare":
+		e_ell(img, k, 68, 54, 6.0, 3.0, lighten(arm_col, 0.20), false)
+	e_poly(img, p, g_fist(78, 62, 8.4), skin)
+	e_line(img, k, 74.5, 60, 74.5, 66, 1.4, darken(skin, 0.30))
+	e_line(img, k, 78, 59.5, 78, 66, 1.4, darken(skin, 0.30))
+	e_line(img, k, 81.5, 60, 81.5, 66, 1.4, darken(skin, 0.30))
+
+# ---- 头发(尖刺炸开)
+
+func _hair(img: Image, p: Dictionary, hat: String, cx: float) -> void:
+	var k := float(p["k"])
+	var hair: Color = p["hair"]
+	if hat in ["silver_helmet", "leather_helm", "iron_helm", "lion_helm", "tiger_helm"]:
+		return
+	if hat == "old_cap" or hat == "guan_jin" or hat == "white_lunjin":
+		e_poly(img, p, g_spiky(cx, 22, 17.0, 22.0, PI * 1.08, PI * 1.92, 5, 0.55), hair)
+	elif hat == "topknot_gold":
+		# 魏延狂髻:束起不炸开(贴头皮窄弧,03 §3.3)
+		e_poly(img, p, g_spiky(cx, 21, 16.5, 20.0, PI * 1.10, PI * 1.90, 4, 0.30), hair)
+	else:
+		e_poly(img, p, g_spiky(cx, 20, 16.0, 25.5, PI * 1.02, PI * 1.98, 7, 0.42), hair)
+	if hat == "topknot":
+		e_cir(img, k, cx, 1.5, 5.2, hair)
+
+# ---- 头饰
+
+func _hat(img: Image, p: Dictionary, hat: String, cx: float) -> void:
+	var k := float(p["k"])
+	var ink: Color = p["ink"]
+	var gold: Color = p["gold"]
+	var cin: Color = p["cin"]
+	var paper: Color = p["paper"]
+	var hair: Color = p["hair"]
+	var metal: Color = p["metal"]
+	var deep := C("deep_green")
+	match hat:
+		"renwang_guan":
+			# 刘备:帻冠 + 金箍 + 双垂带
+			e_ell(img, k, cx, 5, 13.0, 8.0, mixc(ink, deep, 0.45))
+			e_rect(img, k, cx - 14, 10, 28, 3.4, gold)
+			e_bezier(img, k, cx - 14, 13, cx - 21, 20, cx - 20, 29, 2.6, 1.0, mixc(ink, deep, 0.45))
+			e_bezier(img, k, cx + 14, 13, cx + 21, 20, cx + 20, 29, 2.6, 1.0, mixc(ink, deep, 0.45))
+		"green_towel":
+			# 关羽:绿绢巾 + 金边 + 前结 + 双飘带
+			e_ell(img, k, cx, 9, 21.0, 9.5, deep)
+			e_rect(img, k, cx - 20, 13, 40, 3.0, gold)
+			e_cir(img, k, cx + 19, 11, 4.2, deep)
+			e_cir(img, k, cx + 19, 11, 1.8, gold, false)
+			e_bezier(img, k, cx + 22, 14, cx + 30, 22, cx + 27, 35, 3.0, 1.0, deep)
+			e_bezier(img, k, cx + 17, 15, cx + 23, 25, cx + 20, 36, 2.4, 0.9, mixc(deep, paper, 0.3))
+		"black_jin":
+			# 张飞:黑扎巾 + 额前白月牙 + 炸巾带
+			e_ell(img, k, cx, 8, 21.0, 9.5, ink)
+			e_cir(img, k, cx, 1.0, 4.0, ink)
+			e_poly(img, p, g_crescent(cx, 19, 6.6, 3.4, PI * 0.15, PI * 0.85), lighten(paper, 0.30))
+			e_bezier(img, k, cx - 20, 12, cx - 28, 17, cx - 30, 26, 3.0, 1.0, ink)
+			e_bezier(img, k, cx + 20, 12, cx + 28, 17, cx + 30, 26, 3.0, 1.0, ink)
+		"silver_helmet":
+			# 赵云:银盔 + 红缨 + 护额
+			g_ell_grad(img, k, cx, 10, 22.5, 12.0, metal)
+			e_rect(img, k, cx - 23, 17, 46, 4.0, mixc(ink, metal, 0.28))
+			e_ell(img, k, cx, 6, 10.0, 4.5, lighten(metal, 0.30), false)
+			e_cir(img, k, cx, -2.5, 5.2, cin)
+			for i in 4:
+				e_line(img, k, cx, 0.0, cx - 9 + float(i) * 6, -5.0, 2.4, cin)
+			e_poly(img, p, g_wedge(cx - 20, 21, cx - 21, 40, 7.0, 5.0), mixc(ink, metal, 0.30))
+			e_poly(img, p, g_wedge(cx + 20, 21, cx + 21, 40, 7.0, 5.0), mixc(ink, metal, 0.30))
+		"guan_jin":
+			# 诸葛亮:高方山纶巾 + 金玉带 + 后垂巾
+			e_rect(img, k, cx - 13, -6, 26, 20, deep)
+			e_ell(img, k, cx, -6, 13.0, 3.6, deep)
+			e_rect(img, k, cx - 13, 10, 26, 3.4, gold)
+			e_bezier(img, k, cx + 11, 14, cx + 21, 21, cx + 18, 32, 3.2, 1.4, deep)
+			e_bezier(img, k, cx - 11, 14, cx - 21, 21, cx - 18, 32, 3.2, 1.4, deep)
+		"old_cap":
+			# 华佗:软巾 + 垂鬓白发
+			e_ell(img, k, cx, 6, 19.0, 9.5, mixc(paper, C("spring_green"), 0.42))
+			e_rect(img, k, cx - 19, 12, 38, 3.0, C("spring_green"))
+			e_ell(img, k, cx - 18, 20, 5.0, 4.0, hair, false)
+			e_ell(img, k, cx + 18, 20, 5.0, 4.0, hair, false)
+			e_bezier(img, k, cx + 17, 15, cx + 24, 22, cx + 21, 31, 2.6, 1.0, C("spring_green"))
+		"gold_crown":
+			# 吕布:束发金冠 + 双雉鸡翎高挑
+			e_ell(img, k, cx, 6, 14.0, 8.5, gold)
+			e_rect(img, k, cx - 14, 11, 28, 3.4, cin)
+			e_cir(img, k, cx, 0.5, 3.6, cin)
+			e_cir(img, k, cx, 0.5, 1.6, gold, false)
+			e_bezier(img, k, cx - 12, 4, cx - 24, -4, cx - 34, 3, 3.4, 0.9, cin)
+			e_bezier(img, k, cx + 12, 4, cx + 24, -4, cx + 34, 3, 3.4, 0.9, cin)
+			e_bezier(img, k, cx - 12, 5, cx - 23, -1, cx - 31, 4, 1.4, 0.4, mixc(cin, paper, 0.5))
+			e_bezier(img, k, cx + 12, 5, cx + 23, -1, cx + 31, 4, 1.4, 0.4, mixc(cin, paper, 0.5))
+		"yellow_turban":
+			# 黄巾:额巾 + 结 + 双垂带
+			e_ell(img, k, cx, 9, 21.0, 9.0, C("huangjin"))
+			e_rect(img, k, cx - 20, 13, 40, 3.0, darken(C("huangjin"), 0.24))
+			e_cir(img, k, cx + 19, 10, 3.8, C("huangjin"))
+			e_bezier(img, k, cx + 22, 12, cx + 29, 20, cx + 26, 31, 2.8, 1.0, C("huangjin"))
+			e_bezier(img, k, cx + 17, 13, cx + 23, 22, cx + 21, 32, 2.2, 0.9, darken(C("huangjin"), 0.22))
+		"topknot":
+			# 力士:发髻 + 黄额带
+			e_rect(img, k, cx - 21, 12, 42, 3.4, C("huangjin"))
+		"leather_helm":
+			# 西凉:皮盔 + 红缨 + 护颊
+			g_ell_grad(img, k, cx, 11, 23.0, 13.5, mixc(C("huangjin"), ink, 0.38))
+			e_rect(img, k, cx - 23, 17, 46, 3.2, ink)
+			e_cir(img, k, cx, -1.0, 4.4, cin)
+			e_line(img, k, cx, 1, cx - 6, -4, 2.2, cin)
+			e_line(img, k, cx, 1, cx + 6, -4, 2.2, cin)
+			e_poly(img, p, g_crescent(cx - 21, 24, 8.5, 3.2, PI * 0.12, PI * 0.95), mixc(C("huangjin"), ink, 0.38))
+			e_poly(img, p, g_crescent(cx + 21, 24, 8.5, 3.2, PI * 0.05, PI * 0.88), mixc(C("huangjin"), ink, 0.38))
+		"iron_helm":
+			# 华雄:黑兜鍪 + 红缨 + 尖角
+			g_ell_grad(img, k, cx, 10, 24.5, 14.5, metal)
+			e_rect(img, k, cx - 25, 17, 50, 3.4, ink)
+			e_cir(img, k, cx, -2.0, 5.0, cin)
+			for i in 3:
+				e_line(img, k, cx, 0, cx - 10 + float(i) * 10, -5, 2.4, cin)
+			e_poly(img, p, g_leaf(cx - 20, 8, cx - 30, -2, 5.0), metal)
+			e_poly(img, p, g_leaf(cx + 20, 8, cx + 30, -2, 5.0), metal)
+			e_poly(img, p, g_crescent(cx - 22, 24, 10.0, 3.6, PI * 0.10, PI * 0.95), metal)
+			e_poly(img, p, g_crescent(cx + 22, 24, 10.0, 3.6, PI * 0.05, PI * 0.90), metal)
+		"lion_helm":
+			# 马超狮盔(03 §3.1):银盔压扁 + 盔顶金珠(兽首圆珠意象),护颊窄垂片
+			g_ell_grad(img, k, cx, 10, 23.0, 13.0, metal)
+			e_rect(img, k, cx - 23, 17, 46, 3.6, mixc(ink, metal, 0.28))
+			e_cir(img, k, cx, -1.5, 4.6, gold)
+			e_cir(img, k, cx, -1.5, 1.8, cin, false)
+			e_poly(img, p, g_wedge(cx - 21, 21, cx - 22, 38, 6.0, 4.0), mixc(ink, metal, 0.30))
+			e_poly(img, p, g_wedge(cx + 21, 21, cx + 22, 38, 6.0, 4.0), mixc(ink, metal, 0.30))
+		"topknot_gold":
+			# 魏延狂髻(03 §3.3):头顶黑小球束发 + 束发金箍细环 + 额带
+			e_cir(img, k, cx, 1.0, 5.4, ink)
+			e_arc(img, k, cx, 6.5, 6.0, PI * 1.05, PI * 1.95, 2.6, gold)
+			e_rect(img, k, cx - 20, 13, 40, 3.0, ink)
+		"red_headwrap":
+			# 甘宁红巾(05 §4):朱砂包头巾 + 右侧结 + 垂带(与黄巾金黄区分)
+			e_ell(img, k, cx, 9, 21.0, 9.0, cin)
+			e_rect(img, k, cx - 20, 13, 40, 3.0, darken(cin, 0.22))
+			e_cir(img, k, cx + 19, 10, 3.8, darken(cin, 0.15))
+			e_bezier(img, k, cx + 22, 12, cx + 29, 20, cx + 26, 31, 2.8, 1.0, darken(cin, 0.12))
+		"white_lunjin":
+			# 周瑜白纶巾(05 §4):paper 色方巾 + 金箍 + 双垂带(与诸葛深绿巾区分)
+			e_rect(img, k, cx - 13, -6, 26, 20, mixc(paper, Color.WHITE, 0.30))
+			e_ell(img, k, cx, -6, 13.0, 3.6, mixc(paper, Color.WHITE, 0.30))
+			e_rect(img, k, cx - 13, 10, 26, 3.4, gold)
+			e_bezier(img, k, cx + 11, 14, cx + 21, 21, cx + 18, 32, 3.2, 1.4, mixc(paper, C("paper_dark"), 0.5))
+			e_bezier(img, k, cx - 11, 14, cx - 21, 21, cx - 18, 32, 3.2, 1.4, mixc(paper, C("paper_dark"), 0.5))
+		"twin_buns":
+			# 貂蝉双髻(05 §4):顶置两颗黑发小球 + 金饰各一粒
+			e_cir(img, k, cx - 10, 2.0, 7.0, ink)
+			e_cir(img, k, cx + 10, 2.0, 7.0, ink)
+			e_cir(img, k, cx - 10, -2.0, 1.8, gold, false)
+			e_cir(img, k, cx + 10, -2.0, 1.8, gold, false)
+		"tiger_helm":
+			# 许褚虎头盔(05 §4):铁灰半球盔 + 顶部双耳片 + 金额箍
+			g_ell_grad(img, k, cx, 10, 24.0, 14.0, metal)
+			e_rect(img, k, cx - 24, 17, 48, 3.4, mixc(ink, metal, 0.28))
+			for sgn in [-1.0, 1.0]:
+				var s := float(sgn)
+				e_poly(img, p, g_wedge(cx + 11.0 * s, 2.0, cx + 15.0 * s, -8.0, 5.0, 3.0), darken(metal, 0.12))
+			e_rect(img, k, cx - 20, 13, 40, 3.0, gold)
 		_:
 			pass
 
-func _gen_item_top(img: Image, item: String, blade: Color, brown: Color) -> void:
-	var gold := C("gold")
-	match item:
+# ---- 五官
+
+func _face(img: Image, p: Dictionary, eyes: String, brows: String, mouth: String, foe: bool, cx: float) -> void:
+	var k := float(p["k"])
+	var ink: Color = p["ink"]
+	var paper: Color = p["paper"]
+	var cin: Color = p["cin"]
+	_eyes(img, p, eyes, cx)
+	_brows(img, p, brows, cx)
+	_mouth(img, p, mouth, cx)
+	var cheek := Color(cin.r, cin.g, cin.b, 0.16 if foe else 0.24)
+	fill_ellipse(img, (cx - 12.5) * k, 34.0 * k, 4.6 * k, 3.0 * k, cheek)
+	fill_ellipse(img, (cx + 12.5) * k, 34.0 * k, 4.6 * k, 3.0 * k, cheek)
+	if eyes != "glow":
+		e_arc(img, k, cx, 34, 1.8, 0.6, PI - 0.6, 1.2, ink)
+
+func _eyes(img: Image, p: Dictionary, style: String, cx: float) -> void:
+	var k := float(p["k"])
+	var ink: Color = p["ink"]
+	var gold: Color = p["gold"]
+	var paper: Color = p["paper"]
+	var y := 29.0
+	var dx := 9.0
+	match style:
+		"fierce2":
+			# 大圆眼 + 高光 + 上睑(百炼式英气眼)
+			for ex in [cx - dx, cx + dx]:
+				e_ell(img, k, ex, y, 4.0, 4.6, lighten(paper, 0.4))
+				e_ell(img, k, ex + 0.3, y + 0.5, 2.6, 3.0, ink)
+				e_cir(img, k, ex - 1.0, y - 1.2, 1.1, paper, false)
+				e_arc(img, k, ex, y - 1.0, 4.4, PI + 0.35, TAU - 0.35, 1.8, ink)
+		"phoenix":
+			for ex in [cx - dx, cx + dx]:
+				var sgn := -1.0 if ex < cx else 1.0
+				e_limb(img, k, ex - 3.6 * sgn, y + 1.2, ex + 3.6 * sgn, y - 1.8, 3.0, ink)
+				e_cir(img, k, ex + 1.6 * sgn, y - 0.8, 0.8, paper, false)
+				e_arc(img, k, ex, y + 1.6, 4.4, PI + 0.5, TAU - 0.5, 1.4, ink)
+		"ring":
+			for ex in [cx - dx, cx + dx]:
+				e_cir(img, k, ex, y, 5.2, lighten(paper, 0.40))
+				e_cir(img, k, ex + 0.4, y + 0.3, 3.0, ink)
+				e_cir(img, k, ex - 1.1, y - 1.2, 1.0, paper, false)
+		"calm":
+			for ex in [cx - dx, cx + dx]:
+				e_ell(img, k, ex, y + 0.4, 3.2, 1.9, ink)
+				e_limb(img, k, ex - 3.8, y - 1.6, ex + 3.8, y - 0.6, 1.8, ink)
+		"happy":
+			for ex in [cx - dx, cx + dx]:
+				e_arc(img, k, ex, y + 2.0, 3.8, PI + 0.45, TAU - 0.45, 2.6, ink)
+		"fierce":
+			for ex in [cx - dx, cx + dx]:
+				var sgn := -1.0 if ex < cx else 1.0
+				e_limb(img, k, ex - 3.4 * sgn, y + 1.8, ex + 3.6 * sgn, y - 2.0, 3.4, ink)
+				e_cir(img, k, ex + 1.6 * sgn, y - 1.2, 1.1, gold, false)
+		"squint":
+			e_limb(img, k, cx - 13.0, y, cx - 5.0, y - 1.0, 2.4, ink)
+			e_ell(img, k, cx + 9.0, y, 3.4, 3.8, ink)
+			e_cir(img, k, cx + 8.0, y - 1.2, 1.0, paper, false)
+		"narrow":
+			for ex in [cx - dx, cx + dx]:
+				e_limb(img, k, ex - 3.4, y + 0.8, ex + 3.4, y - 1.2, 2.6, ink)
+		"glow":
+			for ex in [cx - dx, cx + dx]:
+				e_limb(img, k, ex - 3.6, y + 1.0, ex + 3.6, y - 1.4, 3.2, darken(gold, 0.45))
+				e_limb(img, k, ex - 2.6, y + 0.5, ex + 2.6, y - 1.0, 1.6, lighten(gold, 0.50))
+		_:
+			for ex in [cx - dx, cx + dx]:
+				e_cir(img, k, ex, y, 2.8, ink)
+				e_cir(img, k, ex - 0.9, y - 1.1, 1.0, paper, false)
+
+func _brows(img: Image, p: Dictionary, style: String, cx: float) -> void:
+	var k := float(p["k"])
+	var ink: Color = p["ink"]
+	var hair: Color = p["hair"]
+	var dx := 9.0
+	match style:
+		"soft":
+			for ex in [cx - dx, cx + dx]:
+				e_arc(img, k, ex, 23.0, 4.4, PI + 0.5, TAU - 0.5, 1.8, ink)
+		"thin":
+			for ex in [cx - dx, cx + dx]:
+				e_limb(img, k, ex - 4.4, 22.4, ex + 4.4, 21.2, 1.6, ink)
+		"straight":
+			for ex in [cx - dx, cx + dx]:
+				e_limb(img, k, ex - 4.2, 22.0, ex + 4.2, 21.2, 2.4, ink)
+		"slant":
+			for ex in [cx - dx, cx + dx]:
+				var sgn := -1.0 if ex < cx else 1.0
+				e_bezier(img, k, ex - 4.4 * sgn, 25.0, ex, 21.6, ex + 5.6 * sgn, 17.5, 2.8, 0.9, ink)
+		"angry":
+			for ex in [cx - dx, cx + dx]:
+				var sgn := -1.0 if ex < cx else 1.0
+				e_limb(img, k, ex - 4.2 * sgn, 24.6, ex + 3.8 * sgn, 19.4, 2.8, ink)
+		"thick":
+			for ex in [cx - dx, cx + dx]:
+				var sgn := -1.0 if ex < cx else 1.0
+				e_poly(img, p, g_wedge(ex - 5.2 * sgn, 25.0, ex + 5.0 * sgn, 18.0, 5.0, 2.0), ink)
+		"white_bushy":
+			for ex in [cx - dx, cx + dx]:
+				var sgn := -1.0 if ex < cx else 1.0
+				e_limb(img, k, ex - 5.0 * sgn, 23.6, ex + 5.2 * sgn, 20.4, 3.4, hair)
+		_:
+			pass
+
+func _mouth(img: Image, p: Dictionary, style: String, cx: float) -> void:
+	var k := float(p["k"])
+	var ink: Color = p["ink"]
+	var paper: Color = p["paper"]
+	var cin: Color = p["cin"]
+	match style:
+		"shout":
+			# 大喝:张口 + 上排牙
+			e_ell(img, k, cx, 38.5, 5.4, 4.6, mixc(ink, cin, 0.45))
+			e_rect(img, k, cx - 4.4, 35.2, 8.8, 2.2, lighten(paper, 0.3))
+		"roar":
+			e_ell(img, k, cx, 38.0, 6.6, 5.6, mixc(ink, cin, 0.50))
+			e_rect(img, k, cx - 5.4, 34.4, 10.8, 2.4, lighten(paper, 0.3))
+			e_poly(img, p, g_wedge(cx - 3.0, 41.6, cx + 3.0, 41.6, 2.4, 2.4), lighten(paper, 0.3))
+		"smile":
+			e_arc(img, k, cx, 36.0, 5.2, 0.45, PI - 0.45, 2.0, ink)
+		"smirk":
+			e_arc(img, k, cx + 1.5, 36.0, 4.8, 0.30, PI - 1.0, 2.0, ink)
+		"tight":
+			e_limb(img, k, cx - 4.4, 37.6, cx + 4.4, 37.0, 2.0, ink)
+		"flat":
+			e_limb(img, k, cx - 5.0, 37.6, cx + 5.0, 37.6, 2.0, ink)
+		"grit":
+			e_ell(img, k, cx, 37.5, 6.2, 3.0, mixc(ink, cin, 0.35))
+			e_line(img, k, cx - 5.6, 37.5, cx + 5.6, 37.5, 1.3, lighten(paper, 0.28))
+			for i in 3:
+				e_line(img, k, cx - 3.4 + float(i) * 3.4, 35.4, cx - 3.4 + float(i) * 3.4, 39.6, 1.0, lighten(paper, 0.2))
+		"open_smile":
+			e_ell(img, k, cx, 37.5, 5.0, 3.6, mixc(ink, cin, 0.38))
+			e_arc(img, k, cx, 34.0, 5.4, PI + 0.4, TAU - 0.4, 1.8, paper)
+		_:
+			pass
+
+# ---- 须髯 / 面甲
+
+func _beard(img: Image, p: Dictionary, style: String, cx: float) -> void:
+	var k := float(p["k"])
+	var ink: Color = p["ink"]
+	var hair: Color = p["hair"]
+	var metal: Color = p["metal"]
+	var skin: Color = p["skin"]
+	match style:
+		"long":
+			# 关羽美髯:三绺长须飘至腹
+			e_poly(img, p, g_leaf(cx, 42, cx - 1, 78, 8.0), hair)
+			e_poly(img, p, g_leaf(cx - 6.5, 41, cx - 13, 70, 3.6), hair)
+			e_poly(img, p, g_leaf(cx + 6.5, 41, cx + 13, 70, 3.6), hair)
+			e_line(img, k, cx - 6, 34, cx - 12, 39, 2.0, hair)
+			e_line(img, k, cx + 6, 34, cx + 12, 39, 2.0, hair)
+			e_line(img, k, cx, 50, cx - 1, 76, 1.3, lighten(hair, 0.28))
+		"bushy":
+			# 张飞虬髯:炸开一片尖刺
+			e_poly(img, p, g_spiky(cx, 40, 13.0, 21.0, PI * 0.08, PI * 0.92, 9, 0.30), hair)
+			e_poly(img, p, g_leaf(cx - 8, 34, cx - 16, 36, 3.6), hair)
+			e_poly(img, p, g_leaf(cx + 8, 34, cx + 16, 36, 3.6), hair)
+		"goatee":
+			e_poly(img, p, g_leaf(cx, 42, cx, 62, 6.4), hair)
+			e_poly(img, p, g_leaf(cx - 4.5, 41, cx - 6, 56, 2.8), hair)
+			e_poly(img, p, g_leaf(cx + 4.5, 41, cx + 6, 56, 2.8), hair)
+		"white_long":
+			e_poly(img, p, g_leaf(cx, 42, cx, 74, 9.0), hair)
+			e_poly(img, p, g_leaf(cx - 6, 41, cx - 10, 62, 3.4), hair)
+			e_poly(img, p, g_leaf(cx + 6, 41, cx + 10, 62, 3.4), hair)
+		"short":
+			e_poly(img, p, g_leaf(cx - 3, 35.5, cx - 11, 38.5, 2.8), hair)
+			e_poly(img, p, g_leaf(cx + 3, 35.5, cx + 11, 38.5, 2.8), hair)
+			e_ell(img, k, cx, 43.5, 2.8, 2.0, hair)
+		"stubble":
+			# 力士:上唇两撇 + 颏下一撮
+			e_poly(img, p, g_leaf(cx - 3, 36, cx - 10, 38, 3.0), hair)
+			e_poly(img, p, g_leaf(cx + 3, 36, cx + 10, 38, 3.0), hair)
+			e_ell(img, k, cx, 45.5, 3.4, 2.4, hair)
+		"goat":
+			# 黄忠:八字两撇 + 山羊一绺(与华佗 white_long 三绺垂胸区分,03 §3.2)
+			e_poly(img, p, g_leaf(cx - 3, 36, cx - 11, 39, 3.2), hair)
+			e_poly(img, p, g_leaf(cx + 3, 36, cx + 11, 39, 3.2), hair)
+			e_poly(img, p, g_leaf(cx, 42, cx + 1, 60, 4.2), hair)
+		"mask":
+			# 华雄:铁面甲 + 鼻脊 + 铆钉 + 排气缝
+			e_poly(img, p, g_crescent(cx, 28, 20.0, 11.0, PI * 0.16, PI * 0.84), metal)
+			e_line(img, k, cx, 28, cx, 46, 2.4, darken(metal, 0.38))
+			e_cir(img, k, cx - 10, 37, 1.5, ink, false)
+			e_cir(img, k, cx + 10, 37, 1.5, ink, false)
+			e_cir(img, k, cx - 5, 43, 1.5, ink, false)
+			e_cir(img, k, cx + 5, 43, 1.5, ink, false)
+			e_line(img, k, cx - 7, 40, cx - 2, 40, 1.4, darken(metal, 0.45))
+			e_line(img, k, cx + 2, 40, cx + 7, 40, 1.4, darken(metal, 0.45))
+		_:
+			pass
+
+# ---- 兵器(斜贯画面的长杆,后层)
+
+func _weapon_back(img: Image, p: Dictionary, wp: String) -> void:
+	var k := float(p["k"])
+	var ink: Color = p["ink"]
+	var gold: Color = p["gold"]
+	var wood := mixc(ink, gold, 0.30)
+	match wp:
 		"guandao":
-			# 青龙偃月:杆顶新月刃
-			arc(img, 244, 54, 26, -2.6, 0.2, 8, blade)
-			fill_circle(img, 244, 44, 6, blade)
-			thick_line(img, 234, 66, 244, 54, 5, blade)
-		"spear_zhang":
-			# 丈八蛇矛:波浪矛头
-			fill_circle(img, 252, 46, 6, blade)
-			fill_circle(img, 245, 34, 6, blade)
-			fill_circle(img, 253, 22, 6, blade)
-			thick_line(img, 248, 52, 252, 44, 5, blade)
-		"silver_spear":
-			fill_circle(img, 250, 36, 7, blade)
-			thick_line(img, 242, 48, 250, 38, 4, blade)
-			thick_line(img, 258, 48, 250, 38, 4, blade)
+			e_limb(img, k, 14, 92, 84, 10, 3.2, wood)
+		"serpent_spear":
+			e_limb(img, k, 16, 90, 86, 14, 3.0, wood)
+		"tiger_spear":
+			e_limb(img, k, 18, 90, 86, 16, 3.0, wood)
 		"halberd":
-			# 方天画戟:两侧新月
-			arc(img, 252, 52, 22, PI * 0.15, PI * 0.95, 6, blade)
-			arc(img, 252, 52, 22, -PI * 0.95, -PI * 0.15, 6, blade)
-			fill_circle(img, 252, 36, 6, gold)
+			e_limb(img, k, 16, 92, 88, 18, 3.4, wood)
+		"spear_shield":
+			e_limb(img, k, 20, 90, 88, 20, 2.8, wood)
+		"great_axe":
+			e_limb(img, k, 14, 94, 86, 26, 4.2, wood)
+		"hammer":
+			e_limb(img, k, 22, 88, 82, 30, 3.8, wood)
+		"wide_spear":
+			# 马超长枪(03 §3.1):杆金褐,与赵云虎头枪区分
+			e_limb(img, k, 18, 90, 86, 16, 3.0, mixc(gold, C("paper"), 0.20))
+		"great_bow":
+			# 黄忠大弓斜背 + 箭囊 3 箭羽(03 §3.2)
+			e_poly(img, p, g_wedge(56, 60, 70, 34, 8.4, 7.0), mixc(C("cinnabar"), gold, 0.4))
+			for i in 3:
+				e_line(img, k, 40 + float(i) * 3, 34, 44 + float(i) * 3, 22, 1.5, ink)
+		"straight_blade":
+			# 魏延大刀:宽直刃(与偃月弯刃区分,03 §3.3)
+			e_limb(img, k, 16, 92, 84, 20, 3.4, wood)
+		# --- 03 第三批(05 §4)---
+		"hook_halberd":
+			# 张辽钩镰戟(05 §4):长杆
+			e_limb(img, k, 16, 92, 86, 16, 3.2, wood)
+		"broad_blade":
+			# 许褚大刀(05 §4):长杆,宽刃前层
+			e_limb(img, k, 16, 92, 84, 22, 3.6, wood)
+		"twin_daggers":
+			# 甘宁双匕(05 §4):两短杆
+			e_limb(img, k, 24, 80, 62, 44, 2.6, wood)
+			e_limb(img, k, 78, 74, 92, 58, 2.6, wood)
+		"slim_sword":
+			# 周瑜细剑(05 §4):单杆
+			e_limb(img, k, 20, 88, 84, 22, 2.6, wood)
+		"round_fan":
+			# 貂蝉团扇(05 §4):无背杆
+			pass
+		"bow":
+			e_poly(img, p, g_wedge(56, 60, 70, 34, 8.4, 7.0), mixc(ink, gold, 0.25))
+			for i in 3:
+				e_line(img, k, 62 + float(i) * 1.8, 40, 60 + float(i) * 2.6, 28, 1.5, ink)
 		_:
 			pass
 
-## 敌兵 256×256:黄巾头巾 + 兵器差异
-func _gen_enemy_stand(list: Array, id: String, weapon: String, big: bool, elite: bool) -> void:
-	rng.seed = seed_for("units/%s.png" % id)
-	var img := new_img(256, 256)
-	var brown := C("dark_brown")
-	var skin := mixc(C("gold"), Color.WHITE, 0.55)
-	var cloth := darken(C("spring_green"), 0.15)
-	var cloth_dark := darken(cloth, 0.30)
-	var band := C("cinnabar") if elite else C("huangjin")
-	var head_r := 54.0 if big else 46.0
-	var head_y := 84.0 if big else 88.0
-	var body_rx := 48.0 if big else 38.0
-	var body_ry := 52.0 if big else 44.0
-	var body_y := 168.0 if big else 164.0
-	# 腿
-	fill_rect(img, 113, 212, 12, 28, cloth_dark)
-	fill_rect(img, 131, 212, 12, 28, cloth_dark)
-	fill_ellipse(img, 119, 242, 10, 5, brown)
-	fill_ellipse(img, 137, 242, 10, 5, brown)
-	# 身体
-	oval(img, 128, body_y, body_rx, body_ry, cloth, brown)
-	# 手臂
-	oval(img, 128 - body_rx + 2, body_y - 6, 12, 26, cloth_dark, brown)
-	oval(img, 128 + body_rx - 2, body_y - 6, 12, 26, cloth_dark, brown)
-	disc(img, 128 - body_rx - 2, body_y + 22, 8, skin, brown)
-	disc(img, 128 + body_rx + 2, body_y + 22, 8, skin, brown)
-	# 头
-	disc(img, 128, head_y, head_r, skin, brown)
-	# 黄巾/朱巾头巾 + 结
-	fill_rect(img, 128 - head_r, head_y - head_r * 0.55, head_r * 2.0, head_r * 0.42, band)
-	fill_circle(img, 128 + head_r - 4, head_y - head_r * 0.35, 8, band)
-	fill_rect(img, 128 + head_r - 8, head_y - head_r * 0.2, 6, 18, band)
-	# 脸
-	fill_circle(img, 128 - 18, head_y + 8, 4, brown)
-	fill_circle(img, 128 + 18, head_y + 8, 4, brown)
-	arc(img, 128, head_y + 22, 10, 0.5, PI - 0.5, 3, brown)
-	# 兵器
-	var blade := lighten(C("gold"), 0.3)
-	match weapon:
-		"knife":
-			thick_line(img, 168, 190, 200, 150, 5, blade)
-			fill_circle(img, 172, 186, 5, brown)
-		"bow":
-			arc(img, 78, 158, 38, -1.1, 1.1, 5, brown)
-			thick_line(img, 84, 122, 84, 194, 2, C("paper_dark"))
-			thick_line(img, 84, 158, 108, 158, 3, C("paper_dark"))
-		"hammer":
-			thick_line(img, 168, 196, 196, 120, 6, brown)
-			fill_rect(img, 182, 84, 40, 34, mixc(brown, C("gold"), 0.4))
-			fill_rect(img, 182, 84, 40, 6, brown)
-		"spear_x":
-			thick_line(img, 170, 220, 182, 60, 5, brown)
-			fill_circle(img, 182, 54, 7, blade)
-			# 小圆盾
-			oval(img, 84, 172, 18, 24, mixc(C("paper"), Color.WHITE, 0.3), brown)
-	if big:
-		# 力士胸带
-		thick_line(img, 104, 150, 152, 196, 6, brown)
-		thick_line(img, 152, 150, 104, 196, 6, brown)
-	save(img, "units/%s.png" % id, list)
+# ---- 兵器头 / 手持物(前层)
 
-## 华雄 448×448:面甲 + 大斧,体格 ×1.5
-func _gen_boss(list: Array) -> void:
-	var id := "huaxiong"
-	rng.seed = seed_for("units/%s.png" % id)
-	var img := new_img(448, 448)
-	var brown := C("dark_brown")
-	var skin := mixc(C("gold"), Color.WHITE, 0.55)
-	var armor := darken(C("deep_green"), 0.35)
-	var armor_dark := darken(armor, 0.3)
-	var blade := lighten(C("gold"), 0.3)
-	# 大斧长杆(后层)
-	thick_line(img, 356, 56, 382, 424, 12, brown)
-	# 腿
-	fill_rect(img, 196, 380, 22, 52, armor_dark)
-	fill_rect(img, 232, 380, 22, 52, armor_dark)
-	fill_ellipse(img, 207, 434, 18, 9, brown)
-	fill_ellipse(img, 243, 434, 18, 9, brown)
-	# 身体甲
-	oval(img, 224, 306, 78, 92, armor, brown)
-	# 肩甲
-	oval(img, 146, 276, 26, 30, armor_dark, brown)
-	oval(img, 302, 276, 26, 30, armor_dark, brown)
-	fill_rect(img, 158, 296, 132, 14, C("cinnabar"))
-	# 手臂
-	oval(img, 130, 296, 18, 40, armor_dark, brown)
-	oval(img, 318, 296, 18, 40, armor_dark, brown)
-	disc(img, 126, 340, 12, skin, brown)
-	disc(img, 322, 340, 12, skin, brown)
-	# 大斧刃(新月大弧)
-	arc(img, 366, 76, 56, -2.9, 0.3, 16, blade)
-	fill_circle(img, 360, 52, 10, blade)
-	# 头
-	disc(img, 224, 148, 92, skin, brown)
-	# 盔
-	fill_ellipse(img, 224, 84, 82, 34, armor)
-	arc(img, 224, 70, 60, PI + 0.5, TAU - 0.5, 8, C("cinnabar"))
-	# 面甲:遮上半脸,留金色眼孔
-	fill_rect(img, 150, 116, 148, 52, darken(armor, 0.4))
-	fill_rect(img, 150, 116, 148, 8, brown)
-	fill_circle(img, 190, 142, 9, C("gold"))
-	fill_circle(img, 258, 142, 9, C("gold"))
-	# 短髯
-	fill_ellipse(img, 224, 226, 34, 24, brown)
-	# 嘴甲
-	fill_rect(img, 200, 180, 48, 14, darken(armor, 0.4))
-	save(img, "units/%s.png" % id, list)
+func _weapon_front(img: Image, p: Dictionary, wp: String) -> void:
+	var k := float(p["k"])
+	var ink: Color = p["ink"]
+	var gold: Color = p["gold"]
+	var cin: Color = p["cin"]
+	var paper: Color = p["paper"]
+	var steel: Color = p["steel"]
+	match wp:
+		"twin_swords":
+			for sgn in [-1.0, 1.0]:
+				var s := float(sgn)
+				var hx := 47.0 + 25.0 * s
+				e_poly(img, p, g_leaf(hx, 68, hx + 16 * s, 24, 7.4), steel)
+				e_rect(img, k, hx - 4.4, 64.5, 8.8, 3.0, gold)
+				e_cir(img, k, hx - 1 * s, 70, 2.4, mixc(ink, gold, 0.5), false)
+		"guandao":
+			# 青龙偃月刀:大刃沿杆轴斜出 + 背齿 + 红缨 + 吞口
+			e_poly(img, p, g_crescent_taper(80, 18, 19.0, 9.5, 19.0, -1.15, 1.05), steel)
+			e_poly(img, p, g_leaf(85, 12, 92, 3, 4.4), steel)
+			e_poly(img, p, g_leaf(74, 16, 66, 10, 3.6), steel)
+			e_cir(img, k, 82, 24, 4.0, gold)
+			e_cir(img, k, 82, 24, 1.8, cin, false)
+			for i in 3:
+				e_bezier(img, k, 82, 28, 78 + float(i) * 3, 36, 76 + float(i) * 4, 46, 2.2, 0.6, cin)
+		"serpent_spear":
+			# 丈八蛇矛:波浪矛头
+			e_poly(img, p, g_serrated(80, 24, 92, 2, 7.0, 2.4, 2.4), steel)
+			e_cir(img, k, 80, 27, 3.4, cin)
+			e_bezier(img, k, 80, 30, 75, 38, 74, 48, 2.2, 0.6, cin)
+		"tiger_spear":
+			# 赵云虎头枪:柳叶尖 + 虎头吞口 + 双缨
+			e_poly(img, p, g_leaf(84, 20, 94, 2, 7.4), steel)
+			e_cir(img, k, 82, 24, 5.2, gold)
+			e_cir(img, k, 80.2, 23.0, 1.2, ink, false)
+			e_cir(img, k, 83.8, 23.0, 1.2, ink, false)
+			e_arc(img, k, 82, 25.5, 2.6, 0.4, PI - 0.4, 1.3, ink)
+			e_bezier(img, k, 82, 29, 77, 36, 75, 46, 2.4, 0.7, cin)
+			e_bezier(img, k, 82, 29, 87, 36, 89, 46, 2.4, 0.7, cin)
+		"halberd":
+			# 方天画戟:中尖 + 双月牙耳 + 金珠 + 缨
+			e_poly(img, p, g_leaf(86, 24, 96, 4, 6.4), steel)
+			e_poly(img, p, g_crescent_lens(86, 22, 12.5, 5.4, -0.85, 0.85), steel)
+			e_poly(img, p, g_crescent_lens(86, 22, 12.5, 5.4, PI - 0.85, PI + 0.85), steel)
+			e_cir(img, k, 86, 28, 2.8, gold)
+			e_bezier(img, k, 86, 31, 81, 38, 80, 48, 2.2, 0.6, cin)
+		"feather_fan":
+			e_poly(img, p, g_pie(74, 58, 20.0, -PI * 1.02, -PI * 0.02), lighten(paper, 0.35))
+			for i in 6:
+				var a := -PI * 1.02 + float(i) * (PI * 1.0 / 5.0)
+				e_line(img, k, 74, 58, 74 + cos(a) * 19, 58 + sin(a) * 19, 1.3, darken(C("spring_green"), 0.12))
+			e_limb(img, k, 76, 64, 78, 54, 2.8, mixc(ink, gold, 0.3))
+		"gourd":
+			e_line(img, k, 24, 68, 24, 62, 1.8, ink)
+			e_cir(img, k, 25, 60, 3.4, mixc(gold, cin, 0.32))
+			e_cir(img, k, 25, 67, 5.2, mixc(gold, cin, 0.32))
+			e_rect(img, k, 23, 55, 4.0, 2.2, ink)
+			e_poly(img, p, g_wedge(62, 70, 78, 62, 5.4, 5.4), mixc(paper, gold, 0.4))
+			e_line(img, k, 63, 68, 77, 63, 1.1, darken(paper, 0.4))
+		"cleaver":
+			e_poly(img, p, g_wedge(76, 62, 94, 34, 7.0, 2.0), steel)
+			e_line(img, k, 74, 66, 79, 60, 3.0, mixc(ink, gold, 0.35))
+			e_cir(img, k, 73, 68, 2.2, gold, false)
+		"bow":
+			e_arc(img, k, 66, 56, 17.0, -PI * 0.42, PI * 0.42, 3.4, mixc(ink, gold, 0.25))
+			e_line(img, k, 66 + cos(-PI * 0.42) * 17, 56 + sin(-PI * 0.42) * 17, 66 + cos(PI * 0.42) * 17, 56 + sin(PI * 0.42) * 17, 1.4, paper)
+			e_poly(img, p, g_wedge(52, 56, 84, 56, 2.2, 1.2), mixc(ink, gold, 0.4))
+			e_poly(img, p, g_leaf(84, 56, 90, 56, 3.4), steel)
+		"hammer":
+			e_rect(img, k, 72, 18, 22, 17, mixc(ink, gold, 0.38))
+			e_rect(img, k, 72, 22, 22, 2.4, darken(ink, 0.25))
+			e_rect(img, k, 72, 29, 22, 2.4, darken(ink, 0.25))
+			e_poly(img, p, g_leaf(94, 22, 98, 12, 5.0), steel)
+		"spear_shield":
+			e_poly(img, p, g_leaf(86, 22, 96, 2, 6.6), steel)
+			e_cir(img, k, 86, 25, 3.0, cin)
+			e_cir(img, k, 22, 62, 13.5, mixc(C("dark_brown"), C("gold"), 0.34))
+			e_arc(img, k, 22, 62, 10.8, 0, TAU, 2.2, mixc(C("huangjin"), C("dark_brown"), 0.35))
+			e_cir(img, k, 22, 62, 4.4, gold)
+			e_cir(img, k, 22, 62, 1.8, cin, false)
+			for i in 4:
+				var a := PI * 0.25 + float(i) * PI * 0.5
+				e_cir(img, k, 22 + cos(a) * 8.2, 62 + sin(a) * 8.2, 1.3, ink, false)
+		"great_axe":
+			# 华雄双刃大斧:杆顶双月牙 + 上尖 + 红缨
+			e_poly(img, p, g_leaf(84, 26, 92, 8, 6.4), steel)
+			e_poly(img, p, g_crescent_lens(84, 32, 15.5, 8.0, -0.9, 0.9), steel)
+			e_poly(img, p, g_crescent_lens(84, 32, 15.5, 8.0, PI - 0.9, PI + 0.9), steel)
+			e_cir(img, k, 84, 32, 4.0, cin)
+			e_bezier(img, k, 84, 36, 79, 44, 78, 54, 2.4, 0.8, cin)
+		"wide_spear":
+			# 马超长枪:加宽锥头 + 金箍 + 红缨(枪头比赵云宽,03 §3.1)
+			e_poly(img, p, g_leaf(82, 22, 94, 2, 9.0), steel)
+			e_cir(img, k, 80, 26, 4.4, gold)
+			e_bezier(img, k, 81, 30, 77, 38, 75, 47, 2.4, 0.7, cin)
+		"great_bow":
+			# 黄忠大弓:大弧 + 弦 + 搭箭(前层),赤铜弓身(03 §3.2)
+			e_arc(img, k, 66, 56, 19.0, -PI * 0.46, PI * 0.46, 3.8, mixc(C("cinnabar"), gold, 0.4))
+			e_line(img, k, 66 + cos(-PI * 0.46) * 19, 56 + sin(-PI * 0.46) * 19, 66 + cos(PI * 0.46) * 19, 56 + sin(PI * 0.46) * 19, 1.4, paper)
+			e_poly(img, p, g_wedge(52, 56, 86, 56, 2.4, 1.2), mixc(ink, gold, 0.4))
+			e_poly(img, p, g_leaf(86, 56, 93, 56, 3.6), steel)
+		"straight_blade":
+			# 魏延大刀:宽直刃 box 意象(无弯,与偃月区分)+ 金格 + 红缨(03 §3.3)
+			e_poly(img, p, g_wedge(80, 28, 92, 8, 9.5, 7.0), steel)
+			e_rect(img, k, 76, 30, 8.0, 3.4, gold)
+			e_bezier(img, k, 78, 34, 74, 42, 72, 52, 2.4, 0.8, cin)
+		# --- 03 第三批(05 §4)---
+		"hook_halberd":
+			# 张辽钩镰戟(05 §4):单侧弯钩(下勾镰)+ 戟锋 + 红缨
+			e_poly(img, p, g_crescent_lens(84, 24, 13.0, 5.0, -0.75, 0.85), steel)
+			e_poly(img, p, g_leaf(84, 24, 93, 8, 4.6), steel)
+			e_cir(img, k, 84, 28, 3.0, gold)
+			e_bezier(img, k, 84, 31, 80, 38, 78, 47, 2.2, 0.6, cin)
+		"broad_blade":
+			# 许褚大刀(05 §4):超宽直刃(比魏延 9.5 更宽)+ 金格
+			e_poly(img, p, g_wedge(80, 28, 94, 6, 12.0, 8.0), steel)
+			e_rect(img, k, 75, 30, 9.0, 3.6, gold)
+			e_bezier(img, k, 78, 34, 74, 42, 72, 52, 2.4, 0.8, cin)
+		"twin_daggers":
+			# 甘宁双匕(05 §4):双手各一短宽刃 + 红柄缨
+			for pair in [[24.0, 80.0, 44.0, 62.0], [78.0, 74.0, 62.0, 92.0]]:
+				e_poly(img, p, g_wedge(pair[0], pair[1], pair[2], pair[3], 5.0, 1.6), steel)
+				e_line(img, k, pair[2], pair[3], (pair[0] + pair[2]) * 0.5, (pair[1] + pair[3]) * 0.5, 2.2, darken(C("dark_brown"), 0.2))
+				e_cir(img, k, pair[0], pair[1], 2.2, cin)
+		"slim_sword":
+			# 周瑜细剑(05 §4):细长直刃 + 金格
+			e_poly(img, p, g_wedge(80, 26, 94, 4, 4.6, 1.2), steel)
+			e_rect(img, k, 76, 30, 7.0, 3.0, gold)
+			e_cir(img, k, 79, 32, 2.0, mixc(ink, gold, 0.4), false)
+		"round_fan":
+			# 貂蝉团扇(05 §4):圆扁片 paper 色 + 扇柄 + 金缘
+			e_cir(img, k, 26, 62, 13.0, mixc(paper, Color.WHITE, 0.30))
+			e_arc(img, k, 26, 62, 12.0, 0, TAU, 1.6, gold)
+			e_line(img, k, 34, 74, 40, 84, 2.4, mixc(C("dark_brown"), C("gold"), 0.4))
+			e_bezier(img, k, 30, 50, 26, 58, 22, 66, 1.2, 0.5, C("spring_green"))
+		_:
+			pass
 
 # ---------------------------------------------------------------- 特效
 

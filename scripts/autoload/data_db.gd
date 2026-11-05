@@ -175,23 +175,35 @@ func _validate_heroes() -> void:
 		if is_lord:
 			lord_count += 1
 			_range("heroes", i, h, "hp", 100, 120)      # 主公 HP 锚点(02 §9)
+		elif str(h.get("id", "")) == "xuchu" or str(h.get("id", "")) == "zhangliao":
+			_range("heroes", i, h, "hp", 60, 160)
+			# 03 第三批:许褚 HP 150(全队最高,05 §2.2)/ 张辽 HP 95(05 §2.1,90 锚点之上)放宽
 		else:
 			_range("heroes", i, h, "hp", 60, 90)        # 武将 HP 锚点(01 §4)
 		_range("heroes", i, h, "atk", 1, 35)
+		# 03 第三批:甘宁攻速 1.3(全队最快,05 §2.3)锚点放宽到 1.5
 		_range("heroes", i, h, "atk_speed", 0.5, 1.5)
-		_range("heroes", i, h, "range", 1, 6)
-		_range("heroes", i, h, "move_speed", 3.5, 4.6)
+		_range("heroes", i, h, "range", 1, 8)     # 03 第二批:黄忠 6.5m(全队最远),锚点放宽到 8
+		_range("heroes", i, h, "move_speed", 3.5, 6.0)   # 03 第二批:马超 5.6(全队最快),锚点放宽到 6
 		_range("heroes", i, h, "recruit_min_wave", 0, 8)
 		var skill: Dictionary = h.get("skill", {})
 		_need(skill, ["id", "name", "cd", "type"], "heroes", i)
-		_range("heroes", i, skill, "cd", 6, 15)         # 技能 CD 锚点(01 §4)
-		var known_types := ["shield", "cone", "nova", "dash", "weather", "heal_all", "triple_nova"]
+		_range("heroes", i, skill, "cd", 6, 18)         # 技能 CD 锚点;03 第三批貂蝉闭月 16s(05 §2.5),放宽到 18
+		# 03 第二批追加:charge(马超铁骑冲锋)/ snipe(黄忠百步穿杨)/ frenzy(魏延狂骨)
+		# 03 第三批追加:fear(张辽威压)/ taunt(许褚虎痴)/ dash_assassin(甘宁百翎直袭)/
+		#               fire_rain(周瑜火雨)/ charm(貂蝉闭月)
+		var known_types := ["shield", "cone", "nova", "dash", "weather", "heal_all", "triple_nova",
+			"charge", "snipe", "frenzy", "fear", "taunt", "dash_assassin", "fire_rain", "charm"]
 		if skill.has("type") and not known_types.has(str(skill["type"])):
 			_err("heroes", i, str(h.get("id", "?")), "未知技能类型 %s" % str(skill["type"]))
 		if h.has("trait"):
 			var tr: Dictionary = h["trait"]
 			_need(tr, ["id", "name", "type"], "heroes", i)
-			var known_traits := ["aura", "execution", "enrage", "disobey"]
+			# 03 第二批追加:fangu(魏延反骨,双刃词条);auraless = 无被动占位标记
+			# 03 第三批追加:controlled_amp(止啼/连环 受控增伤)/ lowhp_dr(裸衣 低血减伤)/
+			#               kill_burst_move(锦帆 击杀移速)/ burn_kill_cd(英物 点燃杀减 CD)
+			var known_traits := ["aura", "execution", "enrage", "disobey", "fangu", "auraless",
+				"controlled_amp", "lowhp_dr", "kill_burst_move", "burn_kill_cd"]
 			if tr.has("type") and not known_traits.has(str(tr["type"])):
 				_err("heroes", i, str(h.get("id", "?")), "未知个性机制 %s" % str(tr["type"]))
 	if lord_count != 1:

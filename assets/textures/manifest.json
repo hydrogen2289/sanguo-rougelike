@@ -1,5 +1,5 @@
 {
-  "count": 37,
+  "count": 45,
   "files": [
     {
       "h": 512,
@@ -78,6 +78,54 @@
       "path": "units/huaxiong.png",
       "seed": 20288236,
       "w": 448
+    },
+    {
+      "h": 320,
+      "path": "units/machao.png",
+      "seed": 20338002,
+      "w": 320
+    },
+    {
+      "h": 320,
+      "path": "units/huangzhong.png",
+      "seed": 20271554,
+      "w": 320
+    },
+    {
+      "h": 320,
+      "path": "units/weiyan.png",
+      "seed": 20320150,
+      "w": 320
+    },
+    {
+      "h": 320,
+      "path": "units/zhangliao.png",
+      "seed": 20278438,
+      "w": 320
+    },
+    {
+      "h": 320,
+      "path": "units/xuchu.png",
+      "seed": 20313686,
+      "w": 320
+    },
+    {
+      "h": 320,
+      "path": "units/ganning.png",
+      "seed": 20304587,
+      "w": 320
+    },
+    {
+      "h": 320,
+      "path": "units/zhouyu.png",
+      "seed": 20360733,
+      "w": 320
+    },
+    {
+      "h": 320,
+      "path": "units/diaochan.png",
+      "seed": 20329120,
+      "w": 320
     },
     {
       "h": 128,

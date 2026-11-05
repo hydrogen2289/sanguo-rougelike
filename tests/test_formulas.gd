@@ -145,11 +145,22 @@ func _run() -> void:
 	var RS3 = root_autoload("RunState")
 	RS3.reset(777)
 	var hero_pool_empty := TriSelectPool.hero_candidates(1, ["liubei", "guanyu", "zhangfei"], 3, 7)
-	check(hero_pool_empty.is_empty(), "W1 无武将卡(赵云 W2 / 华佗 W3 / 诸葛 W4 门槛)")
+	check(hero_pool_empty.is_empty(), "W1 无武将卡(赵云/马超/黄忠/魏延 W2、华佗 W3、诸葛 W4 门槛)")
+	# 03 第二批:W2 起三新将进入候选池;03 第三批:W2 起张辽/甘宁/貂蝉,W3 周瑜
+	var w2_pool := TriSelectPool.hero_candidates(2, ["liubei", "guanyu", "zhangfei"], 3, 7)
+	var w2_ids: Array = []
+	for c in w2_pool:
+		w2_ids.append(str(c.get("id", "")))
+	check(w2_ids.has("machao") and w2_ids.has("huangzhong") and w2_ids.has("weiyan"),
+		"W2 候选池含马超/黄忠/魏延(03 第二批)")
+	check(w2_ids.has("zhangliao") and w2_ids.has("ganning") and w2_ids.has("diaochan"),
+		"W2 候选池含张辽/甘宁/貂蝉(03 第三批,05 §2)")
+	check(not w2_ids.has("zhouyu"), "周瑜 W3 门槛(05 §2.4)")
 	var gated := TriSelectPool.hero_candidates(4, ["liubei", "guanyu", "zhangfei"], 3, 7)
-	check(gated.size() == 3, "W4 门槛开放赵云/华佗/诸葛 3 人")
+	check(gated.size() == 11, "W4 门槛开放赵云/华佗/诸葛 + 03 第二批 3 将 + 03 第三批 5 将共 11 人")
+	# 05 §3 换人规则:满员后武将卡照出(替换卡);队伍满 7 仍出卡(不再清空池)
 	var full_team := TriSelectPool.hero_candidates(8, ["liubei", "guanyu", "zhangfei", "zhaoyun", "huatuo", "zhuge", "lvbu"], 7, 7)
-	check(full_team.is_empty(), "队伍满 7 不出武将卡")
+	check(full_team.size() > 0, "队伍满 7 → 武将卡照出(替换卡,05 §3.1);候选 %d 人" % full_team.size())
 	var w_no_hero: Dictionary = TriSelectPool.weights(0, 5)
 	check(int(w_no_hero.hero) == 0 and int(w_no_hero.relic) == 50, "武将池空 → 权重 20 转遗物(30+20)")
 	var w_no_relic: Dictionary = TriSelectPool.weights(2, 0)
@@ -333,6 +344,109 @@ func _run() -> void:
 		if k != null and k.physical_keycode == KEY_SPACE:
 			space_bound = true
 	check(space_bound, "lord_skill 绑定空格键(主 Agent 拍板)")
+
+	# ================= 03 第三批用例(05 §1/§2/§3,固定 seed)=================
+
+	# --- 敌方新状态字段与互斥规则:恐惧/嘲讽/倒戈,后到覆盖先到(05 §1)---
+	var EU = load("res://scripts/battle/enemy_unit.gd")
+	var e1 = EU.new()
+	e1.apply_stun(3.0)
+	check(e1.stun_left > 0.0 and e1.is_controlled(), "眩晕使 is_controlled = true(前置)")
+	e1.apply_fear(2.0, null)
+	check(e1.fear_left > 0.0 and e1.stun_left == 0.0, "恐惧覆盖眩晕(后到覆盖先到,05 §1)")
+	e1.apply_taunt(3.0, null)
+	check(e1.taunt_left > 0.0 and e1.fear_left == 0.0 and e1.fear_source == null, "嘲讽覆盖恐惧(05 §1)")
+	e1.apply_defect(4.0, null)
+	check(e1.defected_left > 0.0 and e1.taunt_left == 0.0, "倒戈覆盖嘲讽(05 §1)")
+	check(e1.is_controlled(), "倒戈中 is_controlled = true(受控增伤判定口径)")
+	# 计时衰减与到期还原(与 slow 的 left 计时同模式)
+	e1._tick_states(1.0)
+	check(absf(e1.defected_left - 3.0) < 0.001, "倒戈 1s 衰减:剩余 3s")
+	e1._tick_states(3.5)
+	check(e1.defected_left == 0.0 and not e1.is_controlled(), "倒戈到期还原:is_controlled = false")
+	e1.free()
+	# Boss 倒戈豁免(05 §2.5:只踌躇不倒戈,Boss 不走 apply_defect)
+	var e2 = EU.new()
+	e2.boss = true
+	e2.apply_defect(4.0, null)
+	check(e2.defected_left == 0.0 and not e2.is_controlled(), "Boss 免疫倒戈(只踌躇,05 §2.5)")
+	e2.free()
+
+	# --- 受控增伤共用乘区(止啼/连环,05 §1):+15% 仅在目标受控时生效 ---
+	var HU3 = load("res://scripts/battle/hero_unit.gd")
+	var zhiti := {"type": "controlled_amp", "dmg_amp": 0.15}
+	check(absf(HU3.controlled_amp(zhiti, true) - 1.15) < 0.001, "受控目标:止啼乘区 ×1.15")
+	check(absf(HU3.controlled_amp(zhiti, false) - 1.0) < 0.001, "未受控目标:无增伤")
+	check(absf(HU3.controlled_amp({}, true) - 1.0) < 0.001, "无止啼/连环词条:无增伤")
+
+	# --- 许褚裸衣阈值(05 §2.2):HP < 50% 生效 ---
+	check(HU3.luoyi_should_on(0.49), "HP 49% < 50% → 裸衣生效")
+	check(not HU3.luoyi_should_on(0.50), "HP 50% 整 → 裸衣不生效")
+	check(not HU3.luoyi_should_on(0.80), "HP 80% → 裸衣不生效")
+
+	# --- 火雨几何/点燃复用灼烧(05 §2.4):tick 数与总量同灼烧口径 ---
+	check(UB.burn_tick_count(3.0, 0.5) == 6, "火雨点燃 3s = 6 tick(复用灼烧)")
+
+	# --- 换人规则 1+2(05 §3):替换卡 / 离队者回池 / 阵亡补位 ---
+	var RS4 = root_autoload("RunState")
+	RS4.reset(666)
+	check(RS4.team.size() == 3, "开局三人组(前置)")
+	# 招到满员 → 武将卡 replace 标记 = true
+	for hid in ["zhaoyun", "huatuo", "zhuge", "machao"]:
+		check(RS4.add_team_member(hid), "%s 入队(前置)" % hid)
+	check(RS4.team.size() == RunState.MAX_TEAM, "满员 7(前置)")
+	var zl_card: Dictionary = TriSelectPool._hero_card(DataDB.hero_by_id("zhangliao"))
+	check(bool(zl_card.get("replace", false)), "满员时武将卡带 replace 标记(替换卡,05 §3.1)")
+	var not_in_team_card: Dictionary = TriSelectPool._hero_card(DataDB.hero_by_id("huangzhong"))
+	check(bool(not_in_team_card.get("replace", false)), "未在队的武将卡同为替换卡(满员口径)")
+	# 替换:张辽替换马超 → 马超出队(zhangliao 入队、马离队)
+	check(RS4.replace_team_member("zhangliao", "machao"), "替换成功:张辽入场、马超离队")
+	check(RS4.member("zhangliao").size() > 0 and RS4.member("machao").is_empty(), "队伍名单:张辽在队、马超已出队")
+	check(not RS4.member("zhangliao").is_empty() and bool(RS4.member("zhangliao").alive), "入场成员 alive = true")
+	check(RS4.team.size() == RunState.MAX_TEAM, "替换不改变队伍规模(数值零跳变,05 §3.3)")
+	# 离队者回候选池:不在队 → 可再抽回(hero_candidates 含它)
+	var pool_after: Array = TriSelectPool.hero_candidates(2, _team_ids(RS4), RS4.team.size(), RunState.MAX_TEAM)
+	var pool_ids: Array = []
+	for c in pool_after:
+		pool_ids.append(str(c.get("id", "")))
+	check(pool_ids.has("machao"), "离队者马超回候选池(可再抽回,05 §3.1)")
+	# 再抽回:替换口径可再次入队
+	check(RS4.replace_team_member("machao", "zhaoyun"), "马超再抽回:替换赵云入场")
+	check(RS4.member("machao").size() > 0, "马超重新在队(离队者可再抽回)")
+	check(RS4.replace_team_member("zhaoyun", "machao"), "还原:赵云回场、马超离队(恢复前置)")
+	# 替换卡 helper:非法替换拒绝(同一 id / 目标已在队 / 未知 id)
+	check(not RS4.replace_team_member("machao", "machao"), "同一 id 替换拒绝")
+	check(not RS4.replace_team_member("nonexistent_id", "zhuge"), "未知 new id 替换拒绝")
+	# 阵亡补位(05 §3.2):武将阵亡后武将卡恢复可出
+	var zy_m: Dictionary = RS4.member("zhaoyun")
+	zy_m["alive"] = false
+	check(RS4.re_recruitable("zhaoyun"), "赵云阵亡 → 其武将卡恢复可出(阵亡补位,05 §3.2)")
+	check(not RS4.re_recruitable("lvbu"), "吕布 recruit_source=event,不入三选一补位")
+	zy_m["alive"] = true
+	check(not RS4.re_recruitable("zhaoyun"), "在队且存活 → 不重复出卡(前置还原)")
+	check(RS4.re_recruitable("machao"), "离队者(不在队)→ 可出卡(回池口径)")
+	check(not RS4.re_recruitable("guanyu"), "在队且存活(关羽)→ 不可出卡")
+
+	# --- 卡面文本:五将词条描述 ---
+	var card_texts := {
+		"zhangliao": TriSelectPool._hero_card(DataDB.hero_by_id("zhangliao")),
+		"xuchu": TriSelectPool._hero_card(DataDB.hero_by_id("xuchu")),
+		"ganning": TriSelectPool._hero_card(DataDB.hero_by_id("ganning")),
+		"zhouyu": TriSelectPool._hero_card(DataDB.hero_by_id("zhouyu")),
+		"diaochan": TriSelectPool._hero_card(DataDB.hero_by_id("diaochan")),
+	}
+	check(str(card_texts["zhangliao"].get("desc", "")).contains("+15%"), "张辽卡面含受控增伤 +15% 词条")
+	check(str(card_texts["xuchu"].get("desc", "")).contains("30%"), "许褚卡面含裸衣减伤 30% 词条")
+	check(str(card_texts["ganning"].get("desc", "")).contains("2.5"), "甘宁卡面含背袭 ×2.5 词条")
+	check(str(card_texts["zhouyu"].get("desc", "")).contains("点燃"), "周瑜卡面含点燃词条")
+	check(str(card_texts["diaochan"].get("desc", "")).contains("倒戈") or str(card_texts["diaochan"].get("desc", "")).contains("魅惑"),
+		"貂蝉卡面含魅惑(倒戈)词条")
+
+func _team_ids(RS) -> Array:
+	var out: Array = []
+	for m in RS.team:
+		out.append(str(m.hero_id))
+	return out
 
 func ub2_dr(ub) -> void:
 	# 临时减伤与直伤(需要独立实例,避免与上面护盾用例串扰)
