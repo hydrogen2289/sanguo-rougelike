@@ -150,6 +150,30 @@ func _run() -> void:
 	check(is_instance_valid(boss) and not boss.dead and d3._boss_alive(), "W8 重复触发:华雄仍不退场")
 	check(_modal("result") == null, "W8 计时重复触发:不弹胜利结算")
 
+	# --- Boss 增援硬上限(巡检基线实测:无上限时会攒到 217 兵、掉到 3~6 fps)---
+	# 华雄在场时反复调增援 tick,敌数必须被 MAX_ENEMIES 夹住,满员后不再增加。
+	# 注意:这里只调增援,不碰 _force_end_wave —— 那会把华雄一起 retreat 掉,
+	# 破坏下面 M5 二阶段/空格技能的连续断言。
+	var old_rf: Dictionary = d3.wave_data.get("reinforcement", {})
+	d3.wave_data["reinforcement"] = {"interval": 0.1, "count": 4, "enemy": "huangjin_zu", "arc": []}
+	var peak := 0
+	for i in 200:
+		d3._tick_reinforce(0.1)
+		peak = maxi(peak, d3._alive_enemies())
+	var cap: int = d3.MAX_ENEMIES
+	check(peak <= cap, "Boss 增援不越上限 MAX_ENEMIES=%d(实测峰值 %d)" % [cap, peak])
+	check(peak >= cap - 4, "增援确实打到了上限附近(峰值 %d)" % peak)
+	var n_full: int = d3._alive_enemies()
+	for i in 50:
+		d3._tick_reinforce(0.1)
+	check(d3._alive_enemies() == n_full, "满员后继续增援不再加兵(%d → %d)" % [n_full, d3._alive_enemies()])
+	d3.wave_data["reinforcement"] = old_rf
+	check(is_instance_valid(boss) and not boss.dead and d3._boss_alive(), "增援上限测试后华雄仍在场")
+	# 清掉增援堆出来的杂兵,避免影响后续 boss 阶段断言
+	for e in _st.get_nodes_in_group("enemies"):
+		if is_instance_valid(e) and not e.get("boss") and e.has_method("retreat"):
+			e.retreat()
+
 	# --- M5:华雄运行时免疫 / 二阶段召唤 / 空格主公技(数据口径在 test_formulas)---
 	check(is_instance_valid(boss) and boss.stun_immune(), "运行时:华雄免疫眩晕")
 	check(boss.knockback_resist() >= 1.0, "运行时:华雄免疫击退(抗性 100%)")
@@ -177,6 +201,18 @@ func _run() -> void:
 	var res3 = _modal("result")
 	check(res3 != null and res3.victory, "杀华雄后 → 胜利结算「桃园功成」")
 	battle3.free()
+	_st.paused = false
+
+	# --- 结算原因(cause)语义:强制结束标 forced,不再借用 time_up(巡检基线指出的日志歧义)---
+	var battle3b = (load(BATTLE_SCENE) as PackedScene).instantiate()
+	_st.root.add_child(battle3b)
+	var d3b = battle3b.get_node("WaveDirector")
+	d3b._jump_wave(3)
+	_enter_battle_state(d3b)
+	check(d3b.state == d3b.State.BATTLE, "独立实例进入 W3 BATTLE")
+	d3b._force_end_wave()
+	check(d3b.state == d3b.State.INTERMISSION, "强制结束 → INTERMISSION(F2 语义)")
+	battle3b.free()
 	_st.paused = false
 
 	# --- 重开状态复位(SceneRouter.restart_battle 的 RunState 部分口径)---
