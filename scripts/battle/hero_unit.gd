@@ -26,13 +26,21 @@ var _frenzy_mult := 0.0        # >0 = 狂骨攻速 buff 生效中(skill_componen
 var _backstab_mult := 0.0      # 甘宁背袭:>0 = 下次普攻一次性乘区(arm_backstab 武装/consume 清零)
 var _jinfan_mult := 0.0        # 甘宁锦帆:>0 = 击杀移速 buff 生效中
 var _luoyi_on := false         # 许褚裸衣:HP<50% 减伤 30% 生效中(_tick_trait 切换)
+# --- M8 出场基础值(P1 修复,02 §5.4):表值 × 养成乘区,实例化时算一次并缓存 ---
+# refresh_stats() 一律以此二者为 base 再进 RunState.stat() 修饰符体系;
+# 绝不在 refresh 内重算/重复乘 grow。取「表值 × HeroSave.factors()」而非
+# unit_base.setup_from_data() 已写好的 max_hp/atk —— 后者已含 RunState.stat 结果,
+# 直接拿来当 base 会把上一次的 stat 结果再乘一次(双乘 stat),故独立算纯基础值。
+var _base_max_hp := 0.0
+var _base_atk := 0.0
 
 func _ready() -> void:
 	add_to_group("friendlies")
 	hero_data = DataDB.hero_by_id(unit_id)
 	_trait_data = hero_data.get("trait", {})
 	setup_from_data(hero_data)
-	refresh_stats()                    # 应用 RunState 修饰符 + 个体加成
+	_cache_base_stats()                 # 归一:setup 后、首次 refresh 前算一次出场基础值
+	refresh_stats()                    # 应用 RunState 修饰符 + 个体加成(以缓存值为 base)
 	super()                            # UnitBase._ready(group/MeleeRange)
 	skill_comp = get_node_or_null("Skill")
 	if skill_comp != null:
@@ -73,17 +81,30 @@ func _apply_rig() -> void:
 func bind_lord(l: Node3D) -> void:
 	lord = l
 
+## 出场基础值归一(M8 P1,02 §5.4):表值 × HeroSave.factors(unit_id),只算一次。
+## 与 unit_base.setup_from_data() 的 grow 同源,但不含 RunState.stat —— 供 refresh_stats
+## 反复作为纯 base 使用。refresh 内不再触碰 HeroSave(避免战斗层读存档耦合,审计 F-05)。
+func _cache_base_stats() -> void:
+	if hero_data.is_empty():
+		_base_max_hp = 100.0
+		_base_atk = 5.0
+		return
+	var grow := HeroSave.factors(unit_id)
+	_base_max_hp = float(hero_data.get("hp", 100)) * grow
+	_base_atk = float(hero_data.get("atk", 5)) * grow
+
 ## 重新计算属性(RunState 修饰符变动:遗物/强化/事件,01 §8/§9)。
 ## max_hp 增加时同步加到当前 HP;不整活满血。
+## M8 P1:一律以缓存的「出场基础值」为 base 再进 RunState.stat(),养成乘区不再被覆盖回 1.0。
 func refresh_stats() -> void:
 	if hero_data.is_empty():
 		return
 	var d := hero_data
 	var old_max := max_hp
-	max_hp = RunState.stat(float(d.get("hp", 100)), "maxhp")
+	max_hp = RunState.stat(_base_max_hp, "maxhp")
 	if is_lord:
 		max_hp += RunState.lord_maxhp_bonus()
-	atk = RunState.stat(float(d.get("atk", 5)), "atk") * RunState.hero_atk_mult(unit_id)
+	atk = RunState.stat(_base_atk, "atk") * RunState.hero_atk_mult(unit_id)
 	atk_interval = 1.0 / maxf(0.1, float(d.get("atk_speed", 1.0)))
 	atk_range = float(d.get("range", 1.5))
 	move_speed = RunState.stat(float(d.get("move_speed", 4.0)), "move")

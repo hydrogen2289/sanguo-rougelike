@@ -163,10 +163,17 @@ func _summon() -> void:
 	if wd == null or wd.get("spawner") == null:
 		return
 	var sp = wd.get("spawner")     # Spawner 为 RefCounted,保持 Variant 动态调用
+	# 同屏硬上限:召唤与增援共用 WaveDirector.MAX_ENEMIES,否则打不死华雄时
+	# 增援被夹住、召唤却继续堆兵,同屏数量依旧失控(冒烟实测 116 兵)。
+	var cap := int(wd.get("MAX_ENEMIES")) if wd != null else 60
+	var alive: int = get_tree().get_nodes_in_group("enemies").size()
+	count = maxi(mini(count, cap - alive), 0)
+	if count == 0:
+		return
 	var pts: Array = BossHuaxiong.summon_positions(global_position, count)
-	for i in pts.size():
+	for i in count:
 		var u = sp.spawn_enemy(summon_id, wave_base_hp, wave_base_atk)
-		if u != null and is_instance_valid(u):
+		if u != null and is_instance_valid(u) and i < pts.size():
 			u.global_position = pts[i]
 	FloatText.spawn(_vfx_parent(), global_position + Vector3(0.0, 2.4, 0.0), "西凉亲卫,护我!", Color(0.71, 0.29, 0.23), 56)
 

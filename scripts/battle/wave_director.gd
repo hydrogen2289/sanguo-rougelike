@@ -11,6 +11,9 @@ const PRELUDE_SECS := 3.0          # 每波开始前 3s 静场横幅(01 §6)
 const INTERMISSION_SECS := 2.5
 const SPAWN_WINDOW := 0.5          # 波时长前 50% 均匀刷完(M5 平衡调整:0.6→0.5,缓解走位真空期)
 const ELITE_IDS := ["huangjin_lishi"]   # 精英在波次中点之后出现(01 §6)
+## Boss 波增援硬上限:玩家打不死 Boss 时每 10s 无上限加兵会让帧率塌到个位数
+## (巡检基线实测 217 兵 / 3~6fps)。超上限时停止增援,已在场的照常打。
+const MAX_ENEMIES := 60
 
 const TRISELECT_SCENE := "res://scenes/ui/triselect.tscn"
 const SHOP_SCENE := "res://scenes/ui/shop.tscn"
@@ -28,6 +31,9 @@ var state_t := 0.0
 var gold_pool := 0                 # 本波军资掉落余额,总额对齐波表
 var spawner: Spawner
 var reinforce_t := 0.0             # W8 增援计时(每 10s 黄巾卒×4,01 §6)
+var _stage_waves: Array = []       # 闯关模式:当前关卡波次脚本缓存(M9 双源,02 §8.2)
+var _floors_cleared := 0           # 塔(M10):本局已通过层数
+var _retreating := false           # 塔(M10):本次结算由主动撤退触发(折算 1.0,02 §8.4)
 
 # --- M3 波间队列与模态 ---
 var after_queue: Array = []        # 剩余波间项(triselect / event_* / shop / victory)
@@ -39,6 +45,66 @@ var _w8_timeup_done := false
 var _hero_slots: Dictionary = {}   # hero_id -> formation_index(0~5):存活武将全局槽位表(P1-2,01 §10)
 
 @onready var battle: Node3D = get_parent()
+
+# ---------------------------------------------------------------- 波次双源(M9,02 §8.2)
+# 状态机与投放逻辑零改动:只把「波次数据从哪来」抽为 _load_wave 单点。
+# | 模式  | 波次来源                                        | 波间队列(after)      | 胜负出口 |
+# | 塔    | 1~8 层 = DataDB.waves(M10 起 9+ 层接生成器)    | 三选一/事件/商店      | 杀 Boss 过层 |
+# | 闯关  | DataDB.stage_by_id(stage_id).waves 逐波喂入     | 恒空(直接下一波)    | 末波结束 → 结算入库 |
+
+## 波次数据单点(02 §8.2 改造点):塔模式 1~8 层沿 DataDB.waves、9+ 层走随机生成器;
+## 闯关模式读 RunState.context.stage_id 指向的关卡波次脚本(表内顺序即关内波号)。
+## 塔的 wave_idx 即层号(M10):杀 Boss 过层 → 下一层重生成波次。
+func _load_wave(idx: int) -> Dictionary:
+	if RunState.mode == &"campaign":
+		var waves := _campaign_waves()
+		if idx >= 1 and idx <= waves.size():
+			return waves[idx - 1]
+		return {}
+	if RunState.mode == &"tower":
+		# 塔 seed:同局可复现(02 §8.3);按 RunState.run_seed 派生,不污染全局随机
+		return DataDB.tower_floor(idx, tower_seed())
+	return DataDB.wave(idx)
+
+## 塔随机波次 seed:本局 run_seed 派生(层号只决定成长曲线,不混进 seed,
+## 保证同 run_seed 下不同层由同一条随机流生成,仍逐层可复现)。
+func tower_seed() -> int:
+	return int(RunState.run_seed)
+
+## 闯关波次脚本缓存:按 RunState.context.stage_id 读关卡表,一次加载本关复用
+func _campaign_waves() -> Array:
+	if _stage_waves.is_empty():
+		var st: Dictionary = DataDB.stage_by_id(str(RunState.context.get("stage_id", "")))
+		if not st.is_empty():
+			_stage_waves = st.get("waves", []) as Array
+	return _stage_waves
+
+## 本局波次总数:闯关 = 关卡波次数;塔(无尽)= 层数上限;塔(一段式调试)= waves.json 8 波
+func _wave_total() -> int:
+	if RunState.mode == &"campaign":
+		return _campaign_waves().size()
+	if _endless_tower():
+		return TowerSave.floor_cap()
+	return DataDB.waves.size()
+
+## 无尽爬塔(M10,02 §7/§8.2):主城塔入口(goto_tower)注入 context.endless=true,
+## 每过一层即回落 PRELUDE 生成下一层,只在主公阵亡/主动撤退时结算。
+## 旧调试入口 SceneRouter.start_run()(02 §11 已收窄)与冒烟基线仍按「8 波一段式」跑,
+## 保证既有一段式验收口径不被打断。
+func _endless_tower() -> bool:
+	return RunState.mode == &"tower" and bool(RunState.context.get("endless", false))
+
+## 当前波是否 Boss 波:闯关 = 表驱动(composition 含 ai=boss 的敌人);
+## 塔(无尽)= 每 boss_every 层;塔(一段式)= 末波(原逻辑)。
+func _is_boss_wave() -> bool:
+	if RunState.mode == &"campaign":
+		for id in wave_data.get("composition", {}):
+			if str(DataDB.enemy_by_id(str(id)).get("ai", "")) == "boss":
+				return true
+		return false
+	if _endless_tower():
+		return DataDB.tower_is_boss_floor(wave_idx)
+	return wave_idx >= _wave_total()
 
 func _ready() -> void:
 	add_to_group("wave_director")
@@ -172,8 +238,8 @@ func _process(delta: float) -> void:
 				_enter_state(State.BATTLE)
 		State.BATTLE:
 			battle_t += delta
-			if wave_idx >= DataDB.waves.size() and _boss_alive():
-				_tick_reinforce(delta)   # W8:每 10s 增援黄巾卒×4(01 §6)
+			if _is_boss_wave() and _boss_alive():
+				_tick_reinforce(delta)   # 末波 Boss 在场:按波表增援(01 §6;闯关 Boss 关同规则)
 			if _alive_enemies() == 0:
 				_finish_wave(true)
 			elif battle_t >= float(wave_data["duration"]):
@@ -200,13 +266,19 @@ func _enter_state(s: State) -> void:
 	state_t = 0.0
 	match s:
 		State.PRELUDE:
-			wave_data = DataDB.wave(wave_idx)
+			wave_data = _load_wave(wave_idx)
+			if wave_data.is_empty():
+				# 波次数据缺失(坏 stage_id 等):按最小占位波兜底跑通,避免空表崩溃
+				printerr("[WaveDirector] 波次数据缺失 mode=%s idx=%d stage=%s" % [
+					str(RunState.mode), wave_idx, str(RunState.context.get("stage_id", ""))])
+				wave_data = {"idx": wave_idx, "duration": 25.0, "base_hp": 15.0, "base_atk": 5.0,
+					"gold_total": 0, "after": []}
 			gold_pool = int(wave_data.get("gold_total", 0))
 			reinforce_t = 0.0
 			RunState.wave_idx = wave_idx
 			_w8_timeup_done = false
-			if wave_idx >= DataDB.waves.size():
-				# W8 出场演出:红字「华雄 · 都督之威」+ 震屏(01 §10),代替普通波次横幅
+			if _is_boss_wave():
+				# Boss 出场演出:红字「华雄 · 都督之威」+ 震屏(01 §10),代替普通波次横幅
 				EventBus.banner_styled.emit("华雄 · 都督之威", PRELUDE_SECS,
 					UiTheme.col("cinnabar", Color(0.71, 0.29, 0.23)), 56)
 				EventBus.screen_shake.emit(0.55, 0.9)
@@ -220,13 +292,18 @@ func _enter_state(s: State) -> void:
 			_build_spawn_queue()
 		State.SPAWNING:
 			spawn_t = 0.0
-			# 关卡目标提示(docs/03 §2);W8 保留 Boss 出场演出,不覆盖横幅
+			# 关卡目标提示(docs/03 §2);Boss 波保留出场演出,不覆盖横幅(塔 W8/闯关 Boss 关)
 			var obj: Dictionary = wave_data.get("objective", {})
-			if wave_idx < DataDB.waves.size() and not obj.is_empty():
+			if not _is_boss_wave() and not obj.is_empty():
 				EventBus.wave_banner.emit("目标 · " + str(obj.get("label", "")), 1.8)
 		State.BATTLE:
 			battle_t = 0.0
 		State.INTERMISSION:
+			# 塔无尽:Boss 层后无波间(02 §8.2)——1~8 层沿用 waves.json,W8 的 after 恒为
+			# [victory](一段式终局标记),无尽塔若照弹会在此被误判整局胜利、永远上不了 9 层。
+			if _endless_tower() and _is_boss_wave():
+				_next_wave()
+				return
 			EventBus.wave_banner.emit("第 %d 波结束" % wave_idx, 1.5)
 			_begin_after_queue()
 		State.ENDED:
@@ -234,6 +311,13 @@ func _enter_state(s: State) -> void:
 	if OS.is_debug_build():
 		print("[WaveDirector] state=%s wave=%d run_time=%.1f" % [State.keys()[s], wave_idx, RunState.run_time])
 	EventBus.wave_state_changed.emit(State.keys()[s], wave_idx)
+
+## 塔撤退(M10,02 §8.4):主动撤退结算入库(折算 1.0),回主城。波间暂停中也可用。
+func retreat() -> void:
+	if state == State.ENDED or not _endless_tower():
+		return
+	_retreating = true
+	_show_result(false)
 
 # ---------------------------------------------------------------- M3 波间队列
 
@@ -246,8 +330,8 @@ func _advance_after_queue() -> void:
 	if state != State.INTERMISSION or modal != null:
 		return
 	if after_queue.is_empty():
-		if wave_idx >= DataDB.waves.size():
-			_show_result(true)     # 兜底(波 8 after 应含 victory)
+		if wave_idx >= _wave_total():
+			_show_result(true)     # 兜底(末波 after 应含 victory;闯关 after 恒空走此出口)
 		else:
 			_next_wave()
 		return
@@ -257,7 +341,12 @@ func _advance_after_queue() -> void:
 	elif item == "shop":
 		_open_shop()
 	elif item == "victory":
-		_show_result(true)
+		# victory = 一段式(8 波)终局标记;无尽塔不该收到它(Boss 层已在 INTERMISSION 拦截),
+		# 双保险:万一非 Boss 层数据混入 victory,塔内按「过层」处理而非整局胜利(02 §8.2)
+		if _endless_tower():
+			_next_wave()
+		else:
+			_show_result(true)
 	elif item.begins_with("event_"):
 		_open_event(item.substr(6))
 	else:
@@ -320,6 +409,7 @@ func _show_result(victory: bool) -> void:
 	if modal != null and is_instance_valid(modal):
 		modal.queue_free()
 	modal = null
+	var settle := _settle(victory)            # 统一结算管道(M11,02 §8.4)
 	var ui := _instantiate_ui(RESULT_SCENE)
 	get_tree().paused = true
 	if ui == null:
@@ -327,10 +417,53 @@ func _show_result(victory: bool) -> void:
 		return
 	modal = ui
 	modal_layer.add_child(ui)
-	ui.open(victory, RunState.dump())
+	ui.open(victory, RunState.dump(), settle)
+	if not (settle.get("items", []) as Array).is_empty():
+		# 入库「叮」(Sfx 常驻 ALWAYS,暂停中可闻);奖励逐项在结算页展示,不再走横幅
+		Sfx.play("coin", -2.0)
 	if OS.is_debug_build():
 		print("[WaveDirector] 结算:%s 波=%d 击杀=%d 军资=%d 用时=%.0fs" % [
 			"胜利" if victory else "失败", wave_idx, RunState.kills, RunState.gold, RunState.run_time])
+
+## 结算出口(M11,02 §8.4):闯关与塔走同一条 RewardSettle 管道,战斗层只提供战场事实。
+## 评星三元的战场事实(无武将阵亡 / 主公 HP 比)从 RunState.dump() 提取;
+## 局内军资(RunState.gold)一律不入库(02 §8.4:防「留钱不花双赚」)。
+## 塔的一段式调试入口(SceneRouter.start_run 旧路径)不结算入库,保持旧验收口径。
+func _settle(victory: bool) -> Dictionary:
+	var out: Dictionary = {}
+	if RunState.mode == &"campaign":
+		var dump: Dictionary = RunState.dump()
+		var team: Array = dump.get("team", [])
+		var no_casualty := not team.is_empty()
+		for m in team:
+			if not bool(m.get("alive", true)):
+				no_casualty = false
+		var lord_hp_ratio := 1.0
+		if not team.is_empty():
+			var lord: Dictionary = team[0]
+			if float(lord.get("max_hp", 0.0)) > 0.0:
+				lord_hp_ratio = float(lord.get("hp", 0.0)) / float(lord["max_hp"])
+		out = RewardSettle.settle_campaign({
+			"victory": victory,
+			"stage_id": str(RunState.context.get("stage_id", "")),
+			"no_casualty": no_casualty,
+			"lord_hp_ratio": lord_hp_ratio,
+		})
+	elif _endless_tower():
+		# 撤退也是 victory=false,但**不是阵亡**:阵亡 ×death_mult、撤退 ×retreat_mult。
+		# 两个标志同时为 true 会让结算按阵亡折算(丢掉撤退的 1.0 待遇),故互斥取反。
+		out = RewardSettle.settle_tower({
+			"floors_cleared": _floors_cleared,
+			"died": (not victory) and not _retreating,
+			"retreat": _retreating,
+			"kills": RunState.kills,
+		})
+	if bool(out.get("ok", false)) and not (out.get("items", []) as Array).is_empty():
+		SaveState.flush()                # 结算入库即落盘(02 §3.1 写盘时机)
+		if OS.is_debug_build():
+			print("[WaveDirector] 结算入库(%s): %s" % [
+				str(out.get("mode", "")), RewardSettle.items_text(out.get("items", []))])
+	return out
 
 ## 主公阵亡 → 全屏褪色 1s → 失败结算(01 §12 关键演出)
 func _on_lord_died() -> void:
@@ -421,9 +554,10 @@ func _time_up() -> void:
 	# 幂等守卫:仅 BATTLE 态结算一次;BATTLE 每帧重复触发的二次调用一律 no-op(P1-1 回归)
 	if state != State.BATTLE:
 		return
-	# 第 8 波「杀华雄才结束」:Boss 在场时计时到绝不退场/结算,唯一出口是击杀华雄(01 §3)。
+	# Boss 波「杀 Boss 才结束」:Boss 在场时计时到绝不退场/结算,唯一出口是击杀 Boss(01 §3;
+	# 塔第 8 波与闯关 Boss 关同规则,01 §3.5 1-8 华雄关)。
 	# 重复触发只做一次「普通敌退场 + 横幅」,之后每帧静默 return(修复前一帧后即落穿假胜利)
-	if wave_idx >= DataDB.waves.size() and _boss_alive():
+	if _is_boss_wave() and _boss_alive():
 		if not _w8_timeup_done:
 			_w8_timeup_done = true
 			for e in get_tree().get_nodes_in_group("enemies"):
@@ -454,26 +588,40 @@ func _tick_reinforce(delta: float) -> void:
 	reinforce_t -= float(rf.get("interval", 10.0))
 	var count := int(rf.get("count", 4))
 	var arc: Array = rf.get("arc", [])
+	# 硬上限:满员就不再增援(已在场的照常打),防止打不死 Boss 时无限堆兵拖垮帧率
+	count = maxi(mini(count, MAX_ENEMIES - _alive_enemies()), 0)
 	for i in count:
 		spawner.spawn_enemy(str(rf.get("enemy", "huangjin_zu")), float(wave_data["base_hp"]), float(wave_data["base_atk"]), arc)
 
-## 敌兵死亡回调:第 8 波 Boss 阵亡 → 立即胜利(增援/召唤物在场也算,01 §3 杀华雄才结束)
+## 敌兵死亡回调:末波 Boss 阵亡 → 立即胜利(增援/召唤物在场也算,01 §3 杀华雄才结束;
+## 闯关 Boss 关同出口,M9 1-8;塔无尽模式每 Boss 层同出口,M10)。
 func _on_enemy_died(unit: Node) -> void:
 	if state != State.BATTLE and state != State.SPAWNING:
 		return
-	if wave_idx < DataDB.waves.size():
+	if not is_instance_valid(unit) or not bool(unit.get("boss")):
 		return
-	if is_instance_valid(unit) and bool(unit.get("boss")):
-		if OS.is_debug_build():
-			print("[WaveDirector] 华雄阵亡 → 胜利(用时 %.1fs)" % battle_t)
-		_finish_wave(true)
-
-func _finish_wave(cleared: bool) -> void:
+	# 塔无尽:只有 Boss 层杀 Boss 才过层;非 Boss 层漏进来的 Boss 不计
+	if _endless_tower():
+		if not _is_boss_wave():
+			return
+	elif wave_idx < _wave_total():
+		return
 	if OS.is_debug_build():
-		print("[WaveDirector] wave %d 结束(cleared=%s) 敌余=%d" % [wave_idx, str(cleared), _alive_enemies()])
+		print("[WaveDirector] Boss 阵亡 → 过层/胜利(用时 %.1fs)" % battle_t)
+	_finish_wave(true)
+
+## cleared=是否清完(判定口径);cause=结束原因,仅用于日志/CSV 区分
+## "forced"(调试 F2 强制跳过)/"time_up"(计时到)/"cleared"。巡检基线指出:强制结束以前
+## 复用 time_up 的 cleared=false,日志里看起来像「该清完没清完」,现单独标记。
+func _finish_wave(cleared: bool, cause: String = "") -> void:
+	var reason := cause
+	if reason == "":
+		reason = "cleared" if cleared else "time_up"
+	if OS.is_debug_build():
+		print("[WaveDirector] wave %d 结束(cleared=%s cause=%s) 敌余=%d" % [wave_idx, str(cleared), reason, _alive_enemies()])
 	CsvLogger.append_row([
 		wave_idx, snappedf(battle_t, 0.1), _alive_enemies(),
-		_team_hp_snapshot(), "cleared" if cleared else "time_up",
+		_team_hp_snapshot(), reason,
 	])
 	_enter_state(State.INTERMISSION)
 
@@ -485,9 +633,12 @@ func notify_enemy_death(enemy: Node) -> void:
 		spawner.spawn_gold(v, enemy.global_position)
 
 func _next_wave() -> void:
-	if wave_idx >= DataDB.waves.size():
-		_show_result(true)         # 第 8 波结束 → 「桃园功成」(M3)
+	if wave_idx >= _wave_total():
+		_show_result(true)         # 末波结束 → 「桃园功成」(M3;闯关末波同出口后接结算入库)
 		return
+	# 塔无尽模式:一层结束 = 过一层,下一层重新生成波次(02 §8.2「杀 Boss 才过层」)
+	if _endless_tower():
+		_floors_cleared = wave_idx
 	wave_idx += 1
 	_enter_state(State.PRELUDE)
 
@@ -552,14 +703,14 @@ func _force_end_wave() -> void:
 		if e.has_method("retreat"):
 			e.retreat()
 	if state == State.SPAWNING or state == State.BATTLE:
-		_finish_wave(false)
+		_finish_wave(false, "forced")
 
 func _jump_wave(n: int) -> void:
 	for e in get_tree().get_nodes_in_group("enemies"):
 		if e.has_method("retreat"):
 			e.retreat()
 	get_tree().paused = false
-	wave_idx = clampi(n, 1, DataDB.waves.size())
+	wave_idx = clampi(n, 1, maxi(1, _wave_total()))
 	_enter_state(State.PRELUDE)
 
 func _regen_textures() -> void:

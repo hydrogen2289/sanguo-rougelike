@@ -24,6 +24,10 @@ var relics: Array[String] = []           # 同名遗物全场唯一
 var upgrades: Dictionary = {}            # 强化 id -> 叠加次数
 var mods_flat: Dictionary = {}           # stat -> flat 加值
 var mods_pct: Dictionary = {}            # stat -> add% 加成
+# 模式上下文(M7,02 §8.1):闯关="campaign" / 塔="tower";battle 稍后(M9/M10)只读此二者,
+# 战斗层不感知存档(SaveState)。现 8 波剧本即塔初始层带(01 §4.4),默认塔。
+var mode: StringName = &"tower"
+var context: Dictionary = {"floor_start": 1}
 
 func _process(delta: float) -> void:
 	if not team.is_empty():
@@ -45,8 +49,20 @@ func reset(new_seed: int = -1) -> void:
 	upgrades = {}
 	mods_flat = {}
 	mods_pct = {}
-	for id in INITIAL_TEAM:
+	mode = &"tower"                       # reset 归位默认塔模式(02 §8.1)
+	context = {"floor_start": 1}
+	for id in _opening_team():
 		add_team_member(id)
+
+## 开局队伍(02 §5.3):存档已初始化且编队合法时按 squad.slots,否则桃园三人组。
+## 战斗层不感知存档结构,只经此单点取参赛名单。
+func _opening_team() -> Array:
+	if SaveState.data.is_empty():
+		return INITIAL_TEAM
+	var slots: Array = SaveState.data.get("squad", {}).get("slots", [])
+	if slots.is_empty() or str(slots[0]) != "liubei":
+		return INITIAL_TEAM
+	return slots.duplicate()
 
 # ---------------------------------------------------------------- 经济
 
@@ -75,7 +91,8 @@ func add_team_member(hero_id: String) -> bool:
 	var h: Dictionary = DataDB.hero_by_id(hero_id)
 	if h.is_empty():
 		return false
-	var max_hp := float(h.get("hp", 60))
+	# 养成乘区进队伍快照(02 §5.4):HUD 血条/DOT 基数与 HeroUnit 出场值同口径
+	var max_hp := float(h.get("hp", 60)) * HeroSave.factors(hero_id)
 	team.append({
 		"hero_id": hero_id,
 		"name": str(h.get("name", hero_id)),
@@ -235,4 +252,6 @@ func dump() -> Dictionary:
 		"team": team.duplicate(true),
 		"relics": relics.duplicate(),
 		"upgrades": upgrades.duplicate(),
+		"mode": mode,                     # M7:模式上下文随快照带出(结算管道 02 §8.4 用)
+		"context": context.duplicate(true),
 	}

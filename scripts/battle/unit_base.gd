@@ -66,11 +66,15 @@ static func burn_tick_count(duration: float, interval: float) -> int:
 func setup_from_data(d: Dictionary) -> void:
 	unit_id = str(d.get("id", unit_id))
 	display_name = str(d.get("name", unit_id))
-	max_hp = RunState.stat(float(d.get("hp", 100)), "maxhp")
+	# 养成乘区(02 §5.4):出场基础值 = 表值 × 等级×星级乘区,再进 RunState 局内修饰符。
+	# 仅武将(HeroUnit)调用本函数,敌兵另有自己的读表路径;存档未初始化
+	# (冒烟/测试直开战斗)时 factors 返回 1.0。
+	var grow := HeroSave.factors(unit_id)
+	max_hp = RunState.stat(float(d.get("hp", 100)) * grow, "maxhp")
 	if is_lord:
 		max_hp += RunState.lord_maxhp_bonus()
 	hp = max_hp
-	atk = RunState.stat(float(d.get("atk", 5)), "atk")
+	atk = RunState.stat(float(d.get("atk", 5)) * grow, "atk")
 	atk_interval = 1.0 / maxf(0.1, float(d.get("atk_speed", 1.0)))
 	atk_range = float(d.get("range", 1.5))
 	move_speed = RunState.stat(float(d.get("move_speed", 4.0)), "move")

@@ -18,6 +18,7 @@ static func spawn(parent: Node, pos: Vector3, text: String, color: Color, font_s
 	l.modulate = Color(color.r, color.g, color.b, 1.0)
 	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	l.pixel_size = 0.01
+	l.font = UiTheme.font(font_size)   # 内嵌中文字体(Label3D 默认字体无汉字,Linux 上会变方块)
 	l.font_size = font_size
 	l.outline_size = int(font_size * 0.2)
 	l.no_depth_test = true

@@ -55,7 +55,7 @@ func _ready() -> void:
 func _col(token: String, fallback: Color) -> Color:
 	return UiTheme.col(token, fallback)
 
-func _font(size: int) -> SystemFont:
+func _font(size: int) -> Font:
 	return UiTheme.font(size)
 
 func _mk_label(text: String, font_size: int, color: Color) -> Label:
@@ -475,16 +475,20 @@ func _cast_portrait(hero_id: String) -> void:
 
 func _refresh_top_right() -> void:
 	var total := DataDB.waves.size()
-	wave_label.text = "第 %d/%d 波" % [RunState.wave_idx, total]
 	var wd := get_tree().get_first_node_in_group("wave_director")
+	# 塔无尽模式:层号即层数,不显示「/总层数」(02 §7);闯关/一段式仍按波数显示
+	if RunState.mode == &"tower" and bool(RunState.context.get("endless", false)):
+		wave_label.text = "塔 第 %d 层" % RunState.wave_idx
+	else:
+		wave_label.text = "第 %d/%d 波" % [RunState.wave_idx, total]
 	if wd != null and wd.wave_data.has("duration"):
 		time_bar.max_value = float(wd.wave_data["duration"])
 		if wd.state == wd.State.BATTLE:
 			var remain := maxf(0.0, float(wd.wave_data["duration"]) - wd.battle_t)
 			time_bar.value = remain
 			if time_secs != null:
-				# W8 Boss 战:计时到后战斗继续,改示「斩华雄」
-				if wd.wave_idx >= total and wd._w8_timeup_done:
+				# Boss 战:计时到后战斗继续,改示「斩 BOSS」
+				if wd._is_boss_wave() and wd._w8_timeup_done:
 					time_secs.text = "斩华雄,方可结束!"
 				else:
 					time_secs.text = "剩余 %d 秒" % int(ceil(remain))

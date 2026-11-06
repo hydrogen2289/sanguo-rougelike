@@ -1,7 +1,11 @@
 extends Control
-## 主菜单正式版(M3,01 §10/§11):米纸底图 + 标题 + 开始游戏/退出。
+## 主菜单(M3 立版;M7 改造,02 §7/§11):米纸底图 + 标题 + 进入主城 / 塔调试 / 退出。
+## 「进入主城」(02 §7):有档 → 读档进主城;无档 → 新档 + 首次播序章;
+## 坏档校验失败 → SceneRouter.city_enter_failed 横幅提示,拒绝进主城(02 §3.2)。
 ## 底图与装饰全部用程序化生成贴图(ground_paper/vignette/btn_seal,已拍板不下载素材);
-## 标题字走 SystemFont 程序化渲染,朱砂印签由代码绘制。
+## 标题字走工程内嵌 Noto Sans SC(assets/fonts/,不再依赖系统字体),朱砂印签由代码绘制。
+
+var _error_banner: Label
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -9,6 +13,8 @@ func _ready() -> void:
 	_build_title()
 	_build_buttons()
 	_build_footer()
+	_build_error_banner()
+	SceneRouter.city_enter_failed.connect(_on_city_enter_failed)   # 坏档拒绝进主城(M7)
 	Sfx.play_bgm()                     # BGM 五声音阶氛围(M6),主菜单与战斗共用
 
 func _build_background() -> void:
@@ -59,7 +65,7 @@ func _build_title() -> void:
 	rule.custom_minimum_size = Vector2(320, 5)
 	rule.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	box.add_child(rule)
-	var sub := UiTheme.label("三国实时幸存者肉鸽 · 垂直切片", 24, UiTheme.col("deep_green", Color(0.31, 0.44, 0.32)))
+	var sub := UiTheme.label("三国 · 局外养成 / 组队闯关 / 肉鸽试炼塔", 24, UiTheme.col("deep_green", Color(0.31, 0.44, 0.32)))
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(sub)
 	# 朱砂小印(程序化「印」字方章)
@@ -80,9 +86,13 @@ func _build_buttons() -> void:
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	box.add_theme_constant_override("separation", 18)
 	add_child(box)
-	var start := UiTheme.button("开 始 游 戏", 26, Vector2(260, 60))
-	start.pressed.connect(_on_start)
-	box.add_child(start)
+	var city := UiTheme.button("进 入 主 城", 26, Vector2(260, 60))
+	city.pressed.connect(_on_enter_city)
+	box.add_child(city)
+	var tower := UiTheme.button("试炼塔 · 直接爬塔", 18, Vector2(260, 44))
+	tower.tooltip_text = "调试快捷入口(正式版收进主城塔入口,02 §7)"
+	tower.pressed.connect(func() -> void: SceneRouter.goto_tower())
+	box.add_child(tower)
 	var quit := UiTheme.button("退 出", 22, Vector2(260, 50))
 	quit.pressed.connect(func() -> void: get_tree().quit())
 	box.add_child(quit)
@@ -94,13 +104,31 @@ func _build_footer() -> void:
 	hint.size = Vector2(680, 24)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(hint)
-	var ver := UiTheme.label("v0.5 · M5 Boss与平衡 + M6 音效打磨", 13, UiTheme.col("dark_brown", Color(0.5, 0.46, 0.4)))
+	# 版本号从 project.godot 读(application/config/version),避免与导出预设写死的版本漂移
+	var ver_text := "v%s · M7 存档与主城骨架(三层结构转型)" % str(ProjectSettings.get_setting("application/config/version", "0.0.0"))
+	var ver := UiTheme.label(ver_text, 13, UiTheme.col("dark_brown", Color(0.5, 0.46, 0.4)))
 	ver.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	ver.position = Vector2(-300, -28)
 	ver.size = Vector2(600, 20)
 	ver.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(ver)
 
-## 开始游戏 → 序章「桃园结义」(01 §10 界面流程)
-func _on_start() -> void:
-	SceneRouter.start_run()
+## 进入主城(02 §7):读档 / 新档+序章在 SceneRouter.goto_city 内裁决
+func _on_enter_city() -> void:
+	SceneRouter.goto_city()
+
+## 坏档 fail fast 横幅(02 §3.2):拒绝进主城,提示删档重开路径
+func _on_city_enter_failed(reason: String) -> void:
+	_error_banner.text = reason + "(可在存档目录删除 save_v1.json 重开)"
+	_error_banner.visible = true
+
+func _build_error_banner() -> void:
+	_error_banner = UiTheme.label("", 20, UiTheme.col("paper", Color.WHITE), 6)
+	_error_banner.add_theme_color_override("font_color", UiTheme.col("cinnabar", Color(0.71, 0.29, 0.23)))
+	_error_banner.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_error_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_error_banner.custom_minimum_size = Vector2(1400, 0)
+	_error_banner.position = Vector2(-700, 90)
+	_error_banner.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_error_banner.visible = false
+	add_child(_error_banner)

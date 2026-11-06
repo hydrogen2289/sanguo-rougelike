@@ -1,0 +1,4505 @@
+{
+	"_note": "M9 战役关卡表(02 §4.3 schema):章节→关卡→波次脚本。波次契约与 waves.json 完全一致,由 wave_director 同一状态机执行;闯关 after 队列恒为空(波间三选一/商店/事件为塔专属)。first_clear/repeat_clear 即结算奖励来源(01 §8.2 公式:军资=100+20c+5s,Boss 关+50;重复=首通×0.2)。arc 约定同 waves.json:0°=+X(东) 90°=+Z(南) ±180°=-X(西) -90°=-Z(北)。",
+	"chapters": [
+		{
+			"id": "ch1",
+			"name": "桃园篇",
+			"order": 1,
+			"unlock": {
+				"require": null
+			},
+			"stages": [
+				{
+					"id": "1-1",
+					"name": "初起涿郡",
+					"unlock_after": null,
+					"boss_stage": false,
+					"rec_power": 600,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 25,
+							"base_hp": 15,
+							"base_atk": 5,
+							"theme": "桃园结义",
+							"objective": {
+								"type": "clear",
+								"label": "结阵初战,熟悉走位与自动索敌"
+							},
+							"composition": {
+								"huangjin_zu": 6
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 3
+										}
+									},
+									{
+										"t": 5.0,
+										"spawn": {
+											"huangjin_zu": 3
+										},
+										"arc": [
+											45,
+											135
+										]
+									}
+								]
+							},
+							"gold_total": 15,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 28,
+							"base_hp": 16,
+							"base_atk": 5,
+							"theme": "黄巾初犯",
+							"objective": {
+								"type": "clear",
+								"label": "两批黄巾接连来犯,守住主公"
+							},
+							"composition": {
+								"huangjin_zu": 9
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 4
+										}
+									},
+									{
+										"t": 6.0,
+										"spawn": {
+											"huangjin_zu": 5
+										},
+										"arc": [
+											45,
+											135
+										]
+									}
+								]
+							},
+							"gold_total": 16,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 125
+					},
+					"repeat_clear": {
+						"junzi": 25
+					}
+				},
+				{
+					"id": "1-2",
+					"name": "大兴山",
+					"unlock_after": "1-1",
+					"boss_stage": false,
+					"rec_power": 900,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 30,
+							"base_hp": 17,
+							"base_atk": 5,
+							"theme": "山道箭雨",
+							"objective": {
+								"type": "clear",
+								"label": "弓手自北路延后来袭,先清近战再拉开"
+							},
+							"composition": {
+								"huangjin_zu": 8,
+								"huangjin_gongshou": 2
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 4
+										}
+									},
+									{
+										"t": 6.0,
+										"spawn": {
+											"huangjin_zu": 4
+										},
+										"arc": [
+											45,
+											135
+										]
+									},
+									{
+										"t": 12.0,
+										"spawn": {
+											"huangjin_gongshou": 2
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 18,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 32,
+							"base_hp": 18,
+							"base_atk": 6,
+							"theme": "前哨清剿",
+							"objective": {
+								"type": "clear",
+								"label": "东路黄巾压上,弓手压阵北路"
+							},
+							"composition": {
+								"huangjin_zu": 10,
+								"huangjin_gongshou": 3
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 5
+										}
+									},
+									{
+										"t": 7.0,
+										"spawn": {
+											"huangjin_zu": 5
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 13.0,
+										"spawn": {
+											"huangjin_gongshou": 3
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 20,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 130,
+						"fragments": {
+							"huatuo": 5
+						}
+					},
+					"repeat_clear": {
+						"junzi": 26
+					}
+				},
+				{
+					"id": "1-3",
+					"name": "青州围城",
+					"unlock_after": "1-2",
+					"boss_stage": false,
+					"rec_power": 1200,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 32,
+							"base_hp": 19,
+							"base_atk": 6,
+							"theme": "重锤压阵",
+							"objective": {
+								"type": "elite",
+								"label": "力士压轴登场,留技能打断其近身"
+							},
+							"composition": {
+								"huangjin_zu": 10,
+								"huangjin_gongshou": 3,
+								"huangjin_lishi": 1
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 5
+										}
+									},
+									{
+										"t": 7.0,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_gongshou": 3
+										},
+										"arc": [
+											45,
+											135
+										]
+									},
+									{
+										"t": 14.0,
+										"spawn": {
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											45,
+											135
+										]
+									}
+								]
+							},
+							"gold_total": 21,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 34,
+							"base_hp": 20,
+							"base_atk": 6,
+							"theme": "围城反击",
+							"objective": {
+								"type": "clear",
+								"label": "黄巾四面围城,力士自西侧收口"
+							},
+							"composition": {
+								"huangjin_zu": 12,
+								"huangjin_gongshou": 4,
+								"huangjin_lishi": 2
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 6
+										}
+									},
+									{
+										"t": 7.0,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 4
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 15.0,
+										"spawn": {
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											135,
+											180
+										]
+									}
+								]
+							},
+							"gold_total": 22,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 135
+					},
+					"repeat_clear": {
+						"junzi": 27
+					}
+				},
+				{
+					"id": "1-4",
+					"name": "夜袭粮营",
+					"unlock_after": "1-3",
+					"boss_stage": false,
+					"rec_power": 1500,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 26,
+							"base_hp": 19,
+							"base_atk": 6,
+							"theme": "摸哨",
+							"objective": {
+								"type": "clear",
+								"label": "悄悄解决北面哨兵,别惊动大营"
+							},
+							"composition": {
+								"huangjin_zu": 8,
+								"huangjin_gongshou": 2
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 4
+										}
+									},
+									{
+										"t": 5.0,
+										"spawn": {
+											"huangjin_zu": 4,
+											"huangjin_gongshou": 2
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 18,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 32,
+							"base_hp": 21,
+							"base_atk": 7,
+							"theme": "粮营火起",
+							"objective": {
+								"type": "clear",
+								"label": "放火引敌,两路接战逐一击破"
+							},
+							"composition": {
+								"huangjin_zu": 12,
+								"huangjin_gongshou": 4,
+								"huangjin_lishi": 1
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 6
+										}
+									},
+									{
+										"t": 8.0,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 4
+										},
+										"arc": [
+											45,
+											135
+										]
+									},
+									{
+										"t": 14.0,
+										"spawn": {
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 22,
+							"after": []
+						},
+						{
+							"idx": 3,
+							"duration": 36,
+							"base_hp": 22,
+							"base_atk": 7,
+							"theme": "断粮归师",
+							"objective": {
+								"type": "pincer",
+								"label": "归师被截,东西两路合击"
+							},
+							"composition": {
+								"huangjin_zu": 14,
+								"huangjin_gongshou": 5,
+								"huangjin_lishi": 2
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 7
+										}
+									},
+									{
+										"t": 8.0,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 5
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 16.0,
+										"spawn": {
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											135,
+											180
+										]
+									}
+								]
+							},
+							"gold_total": 24,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 140
+					},
+					"repeat_clear": {
+						"junzi": 28
+					}
+				},
+				{
+					"id": "1-5",
+					"name": "两翼合围",
+					"unlock_after": "1-4",
+					"boss_stage": false,
+					"rec_power": 1800,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 34,
+							"base_hp": 22,
+							"base_atk": 7,
+							"theme": "南北夹击",
+							"objective": {
+								"type": "pincer",
+								"label": "南北两翼夹击,往空侧拉扯再回身"
+							},
+							"composition": {
+								"huangjin_zu": 13,
+								"huangjin_gongshou": 5,
+								"huangjin_lishi": 2
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_gongshou": 2
+										},
+										"arc": [
+											45,
+											135
+										]
+									},
+									{
+										"t": 7.0,
+										"spawn": {
+											"huangjin_zu": 4,
+											"huangjin_gongshou": 3
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									},
+									{
+										"t": 14.0,
+										"spawn": {
+											"huangjin_zu": 4,
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											45,
+											135
+										]
+									}
+								]
+							},
+							"gold_total": 23,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 38,
+							"base_hp": 24,
+							"base_atk": 8,
+							"theme": "合围破阵",
+							"objective": {
+								"type": "pincer",
+								"label": "合围收紧,力士开路,往缝隙里钻"
+							},
+							"composition": {
+								"huangjin_zu": 16,
+								"huangjin_gongshou": 6,
+								"huangjin_lishi": 3
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 3
+										},
+										"arc": [
+											45,
+											135
+										]
+									},
+									{
+										"t": 8.0,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_gongshou": 3
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									},
+									{
+										"t": 15.0,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_lishi": 3
+										},
+										"arc": [
+											45,
+											135
+										]
+									}
+								]
+							},
+							"gold_total": 26,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 145,
+						"fragments": {
+							"zhuge": 5
+						}
+					},
+					"repeat_clear": {
+						"junzi": 29
+					}
+				},
+				{
+					"id": "1-6",
+					"name": "曲阳对峙",
+					"unlock_after": "1-5",
+					"boss_stage": false,
+					"rec_power": 2200,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 30,
+							"base_hp": 23,
+							"base_atk": 7,
+							"theme": "前哨对垒",
+							"objective": {
+								"type": "clear",
+								"label": "东路前哨接战,稳住阵脚"
+							},
+							"composition": {
+								"huangjin_zu": 12,
+								"huangjin_gongshou": 5,
+								"huangjin_lishi": 2
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 6
+										}
+									},
+									{
+										"t": 7.0,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 5
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 14.0,
+										"spawn": {
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											45,
+											135
+										]
+									}
+								]
+							},
+							"gold_total": 23,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 36,
+							"base_hp": 25,
+							"base_atk": 8,
+							"theme": "相持",
+							"objective": {
+								"type": "survive",
+								"label": "两军相持,保主公撑到计时结束"
+							},
+							"composition": {
+								"huangjin_zu": 16,
+								"huangjin_gongshou": 6,
+								"huangjin_lishi": 3
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 3
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 9.0,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_gongshou": 3
+										},
+										"arc": [
+											45,
+											135
+										]
+									},
+									{
+										"t": 16.0,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_lishi": 3
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 25,
+							"after": []
+						},
+						{
+							"idx": 3,
+							"duration": 40,
+							"base_hp": 26,
+							"base_atk": 8,
+							"theme": "冲阵",
+							"objective": {
+								"type": "clear",
+								"label": "三批冲阵递进,攒好技能迎第三批"
+							},
+							"composition": {
+								"huangjin_zu": 18,
+								"huangjin_gongshou": 7,
+								"huangjin_lishi": 4
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 4
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 10.0,
+										"spawn": {
+											"huangjin_zu": 6
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									},
+									{
+										"t": 17.0,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 4
+										},
+										"arc": [
+											45,
+											135
+										]
+									}
+								]
+							},
+							"gold_total": 27,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 150
+					},
+					"repeat_clear": {
+						"junzi": 30
+					}
+				},
+				{
+					"id": "1-7",
+					"name": "广宗城下",
+					"unlock_after": "1-6",
+					"boss_stage": false,
+					"rec_power": 2600,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 34,
+							"base_hp": 25,
+							"base_atk": 9,
+							"theme": "城下督军",
+							"objective": {
+								"type": "clear",
+								"label": "城下督军亲压阵前,先破其卫队"
+							},
+							"composition": {
+								"huangjin_zu": 15,
+								"huangjin_gongshou": 6,
+								"huangjin_lishi": 3
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 3
+										}
+									},
+									{
+										"t": 8.0,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_gongshou": 3
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									},
+									{
+										"t": 15.0,
+										"spawn": {
+											"huangjin_zu": 4,
+											"huangjin_lishi": 3
+										},
+										"arc": [
+											45,
+											135
+										]
+									}
+								]
+							},
+							"gold_total": 25,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 38,
+							"base_hp": 27,
+							"base_atk": 9,
+							"theme": "亲卫队",
+							"objective": {
+								"type": "elite",
+								"label": "黄巾力士亲卫尽出,三面合围"
+							},
+							"composition": {
+								"huangjin_zu": 17,
+								"huangjin_gongshou": 7,
+								"huangjin_lishi": 4
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 3
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 9.0,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 4
+										},
+										"arc": [
+											45,
+											135
+										]
+									},
+									{
+										"t": 17.0,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_lishi": 4
+										},
+										"arc": [
+											135,
+											180
+										]
+									}
+								]
+							},
+							"gold_total": 27,
+							"after": []
+						},
+						{
+							"idx": 3,
+							"duration": 42,
+							"base_hp": 28,
+							"base_atk": 10,
+							"theme": "黄巾巢穴",
+							"objective": {
+								"type": "survive",
+								"label": "巢穴倾巢而出,保主公撑到计时结束"
+							},
+							"composition": {
+								"huangjin_zu": 20,
+								"huangjin_gongshou": 8,
+								"huangjin_lishi": 5
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 4
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 10.0,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 4
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									},
+									{
+										"t": 19.0,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_lishi": 5
+										},
+										"arc": [
+											45,
+											135
+										]
+									}
+								]
+							},
+							"gold_total": 29,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 155
+					},
+					"repeat_clear": {
+						"junzi": 31
+					}
+				},
+				{
+					"id": "1-8",
+					"name": "虎牢·华雄",
+					"unlock_after": "1-7",
+					"boss_stage": true,
+					"rec_power": 3000,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 32,
+							"base_hp": 26,
+							"base_atk": 9,
+							"theme": "关前搦战",
+							"objective": {
+								"type": "clear",
+								"label": "关前守军搦战,清出决战场地"
+							},
+							"composition": {
+								"huangjin_zu": 12,
+								"huangjin_gongshou": 5,
+								"huangjin_lishi": 3
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 2
+										}
+									},
+									{
+										"t": 8.0,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 3
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									},
+									{
+										"t": 15.0,
+										"spawn": {
+											"huangjin_lishi": 3
+										},
+										"arc": [
+											45,
+											135
+										]
+									}
+								]
+							},
+							"gold_total": 25,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 45,
+							"base_hp": 30,
+							"base_atk": 10,
+							"theme": "华雄·都督之威",
+							"objective": {
+								"type": "boss",
+								"label": "斩华雄方可收兵,计时到不会自动胜利"
+							},
+							"composition": {
+								"huaxiong": 1
+							},
+							"spawn_plan": {
+								"arc": [
+									-30,
+									30
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huaxiong": 1
+										}
+									}
+								]
+							},
+							"reinforcement": {
+								"enemy": "huangjin_zu",
+								"count": 4,
+								"interval": 10.0,
+								"arc": [
+									120,
+									180
+								]
+							},
+							"gold_total": 30,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 210,
+						"fragments": {
+							"lvbu": 5
+						}
+					},
+					"repeat_clear": {
+						"junzi": 42
+					}
+				}
+			]
+		},
+		{
+			"id": "ch2",
+			"name": "白马篇",
+			"order": 2,
+			"unlock": {
+				"require": "ch1"
+			},
+			"stages": [
+				{
+					"id": "2-1",
+					"name": "白马渡口",
+					"unlock_after": "1-8",
+					"boss_stage": false,
+					"rec_power": 3400,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 30,
+							"base_hp": 20,
+							"base_atk": 6,
+							"theme": "白马渡口·第1战",
+							"objective": {
+								"type": "clear",
+								"label": "白马渡口：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 10,
+								"huangjin_gongshou": 3,
+								"huangjin_lishi": 1
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 4,
+											"huangjin_gongshou": 1,
+											"huangjin_lishi": 1
+										}
+									},
+									{
+										"t": 5.0,
+										"spawn": {
+											"huangjin_zu": 3,
+											"huangjin_gongshou": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 10.0,
+										"spawn": {
+											"huangjin_zu": 3,
+											"huangjin_gongshou": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 18,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 32,
+							"base_hp": 21,
+							"base_atk": 6,
+							"theme": "白马渡口·第2战",
+							"objective": {
+								"type": "clear",
+								"label": "白马渡口：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 12,
+								"huangjin_gongshou": 4,
+								"huangjin_lishi": 1
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 4,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										}
+									},
+									{
+										"t": 5.3,
+										"spawn": {
+											"huangjin_zu": 4,
+											"huangjin_gongshou": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 10.7,
+										"spawn": {
+											"huangjin_zu": 4,
+											"huangjin_gongshou": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 20,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 185,
+						"fragments": {
+							"machao": 5
+						}
+					},
+					"repeat_clear": {
+						"junzi": 37
+					}
+				},
+				{
+					"id": "2-2",
+					"name": "延津斥候",
+					"unlock_after": "2-1",
+					"boss_stage": false,
+					"rec_power": 3800,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 32,
+							"base_hp": 21,
+							"base_atk": 7,
+							"theme": "延津斥候·第1战",
+							"objective": {
+								"type": "clear",
+								"label": "延津斥候：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 12,
+								"huangjin_gongshou": 4,
+								"huangjin_lishi": 2
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 4,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										}
+									},
+									{
+										"t": 5.3,
+										"spawn": {
+											"huangjin_zu": 4,
+											"huangjin_gongshou": 1,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 10.7,
+										"spawn": {
+											"huangjin_zu": 4,
+											"huangjin_gongshou": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 19,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 34,
+							"base_hp": 22,
+							"base_atk": 7,
+							"theme": "延津斥候·第2战",
+							"objective": {
+								"type": "elite",
+								"label": "延津斥候：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 14,
+								"huangjin_gongshou": 5,
+								"huangjin_lishi": 2
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										}
+									},
+									{
+										"t": 5.7,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 11.3,
+										"spawn": {
+											"huangjin_zu": 4,
+											"huangjin_gongshou": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 21,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 190
+					},
+					"repeat_clear": {
+						"junzi": 38
+					}
+				},
+				{
+					"id": "2-3",
+					"name": "黎阳夜战",
+					"unlock_after": "2-2",
+					"boss_stage": false,
+					"rec_power": 4200,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 34,
+							"base_hp": 22,
+							"base_atk": 7,
+							"theme": "黎阳夜战·第1战",
+							"objective": {
+								"type": "elite",
+								"label": "黎阳夜战：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 14,
+								"huangjin_gongshou": 5,
+								"huangjin_lishi": 2
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										}
+									},
+									{
+										"t": 5.7,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 11.3,
+										"spawn": {
+											"huangjin_zu": 4,
+											"huangjin_gongshou": 1
+										},
+										"arc": [
+											135,
+											180
+										]
+									}
+								]
+							},
+							"gold_total": 20,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 36,
+							"base_hp": 23,
+							"base_atk": 8,
+							"theme": "黎阳夜战·第2战",
+							"objective": {
+								"type": "elite",
+								"label": "黎阳夜战：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 16,
+								"huangjin_gongshou": 6,
+								"huangjin_lishi": 3
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										}
+									},
+									{
+										"t": 6.0,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 12.0,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 22,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 196
+					},
+					"repeat_clear": {
+						"junzi": 39
+					}
+				},
+				{
+					"id": "2-4",
+					"name": "黄河浮桥",
+					"unlock_after": "2-3",
+					"boss_stage": false,
+					"rec_power": 4600,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 36,
+							"base_hp": 23,
+							"base_atk": 8,
+							"theme": "黄河浮桥·第1战",
+							"objective": {
+								"type": "elite",
+								"label": "黄河浮桥：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 16,
+								"huangjin_gongshou": 6,
+								"huangjin_lishi": 3
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										}
+									},
+									{
+										"t": 6.0,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 12.0,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 21,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 38,
+							"base_hp": 24,
+							"base_atk": 8,
+							"theme": "黄河浮桥·第2战",
+							"objective": {
+								"type": "elite",
+								"label": "黄河浮桥：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 18,
+								"huangjin_gongshou": 7,
+								"huangjin_lishi": 3
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										}
+									},
+									{
+										"t": 6.3,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 12.7,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 23,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 202
+					},
+					"repeat_clear": {
+						"junzi": 40
+					}
+				},
+				{
+					"id": "2-5",
+					"name": "白马坡",
+					"unlock_after": "2-4",
+					"boss_stage": false,
+					"rec_power": 5000,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 38,
+							"base_hp": 24,
+							"base_atk": 9,
+							"theme": "白马坡·第1战",
+							"objective": {
+								"type": "elite",
+								"label": "白马坡：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 18,
+								"huangjin_gongshou": 7,
+								"huangjin_lishi": 3
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										}
+									},
+									{
+										"t": 6.3,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 12.7,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 22,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 40,
+							"base_hp": 25,
+							"base_atk": 9,
+							"theme": "白马坡·第2战",
+							"objective": {
+								"type": "elite",
+								"label": "白马坡：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 20,
+								"huangjin_gongshou": 8,
+								"huangjin_lishi": 4
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 2
+										}
+									},
+									{
+										"t": 6.7,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 13.3,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 24,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 208
+					},
+					"repeat_clear": {
+						"junzi": 42
+					}
+				},
+				{
+					"id": "2-6",
+					"name": "文丑压阵",
+					"unlock_after": "2-5",
+					"boss_stage": false,
+					"rec_power": 5400,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 40,
+							"base_hp": 25,
+							"base_atk": 9,
+							"theme": "文丑压阵·第1战",
+							"objective": {
+								"type": "elite",
+								"label": "文丑压阵：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 20,
+								"huangjin_gongshou": 8,
+								"huangjin_lishi": 4
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 2
+										}
+									},
+									{
+										"t": 6.7,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 13.3,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 23,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 42,
+							"base_hp": 26,
+							"base_atk": 10,
+							"theme": "文丑压阵·第2战",
+							"objective": {
+								"type": "elite",
+								"label": "文丑压阵：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 22,
+								"huangjin_gongshou": 9,
+								"huangjin_lishi": 4
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 2
+										}
+									},
+									{
+										"t": 7.0,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 14.0,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 26,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 214,
+						"fragments": {
+							"zhangliao": 5
+						}
+					},
+					"repeat_clear": {
+						"junzi": 43
+					}
+				},
+				{
+					"id": "2-7",
+					"name": "颜良列阵",
+					"unlock_after": "2-6",
+					"boss_stage": false,
+					"rec_power": 5800,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 42,
+							"base_hp": 26,
+							"base_atk": 10,
+							"theme": "颜良列阵·第1战",
+							"objective": {
+								"type": "elite",
+								"label": "颜良列阵：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 22,
+								"huangjin_gongshou": 9,
+								"huangjin_lishi": 4
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 2
+										}
+									},
+									{
+										"t": 7.0,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 14.0,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 24,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 44,
+							"base_hp": 27,
+							"base_atk": 10,
+							"theme": "颜良列阵·第2战",
+							"objective": {
+								"type": "elite",
+								"label": "颜良列阵：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 24,
+								"huangjin_gongshou": 10,
+								"huangjin_lishi": 5
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 4,
+											"huangjin_lishi": 2
+										}
+									},
+									{
+										"t": 7.3,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 14.7,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 27,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 220
+					},
+					"repeat_clear": {
+						"junzi": 44
+					}
+				},
+				{
+					"id": "2-8",
+					"name": "双雄合击",
+					"unlock_after": "2-7",
+					"boss_stage": false,
+					"rec_power": 6400,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 44,
+							"base_hp": 27,
+							"base_atk": 10,
+							"theme": "双雄合击·第1战",
+							"objective": {
+								"type": "elite",
+								"label": "双雄合击：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 22,
+								"huangjin_gongshou": 8,
+								"huangjin_lishi": 4
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 2
+										}
+									},
+									{
+										"t": 7.3,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 14.7,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 25,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 45,
+							"base_hp": 28,
+							"base_atk": 11,
+							"theme": "双雄合击·第2战",
+							"objective": {
+								"type": "elite",
+								"label": "双雄合击：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 24,
+								"huangjin_gongshou": 10,
+								"huangjin_lishi": 5
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 4,
+											"huangjin_lishi": 2
+										}
+									},
+									{
+										"t": 7.5,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 15.0,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 28,
+							"after": []
+						},
+						{
+							"idx": 3,
+							"duration": 45,
+							"base_hp": 30,
+							"base_atk": 12,
+							"theme": "双雄合击·第3战",
+							"objective": {
+								"type": "elite",
+								"label": "双雄合击：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 26,
+								"huangjin_gongshou": 12,
+								"huangjin_lishi": 6
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 9,
+											"huangjin_gongshou": 4,
+											"huangjin_lishi": 2
+										}
+									},
+									{
+										"t": 7.5,
+										"spawn": {
+											"huangjin_zu": 9,
+											"huangjin_gongshou": 4,
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 15.0,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 4,
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 30,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 245,
+						"fragments": {
+							"zhaoyun": 5
+						}
+					},
+					"repeat_clear": {
+						"junzi": 49
+					}
+				}
+			]
+		},
+		{
+			"id": "ch3",
+			"name": "官渡篇",
+			"order": 3,
+			"unlock": {
+				"require": "ch2"
+			},
+			"stages": [
+				{
+					"id": "3-1",
+					"name": "官渡对峙",
+					"unlock_after": "2-8",
+					"boss_stage": false,
+					"rec_power": 7000,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 30,
+							"base_hp": 22,
+							"base_atk": 8,
+							"theme": "官渡对峙·第1战",
+							"objective": {
+								"type": "clear",
+								"label": "官渡对峙：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 12,
+								"huangjin_gongshou": 4,
+								"huangjin_lishi": 2
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 4,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										}
+									},
+									{
+										"t": 5.0,
+										"spawn": {
+											"huangjin_zu": 4,
+											"huangjin_gongshou": 1,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 10.0,
+										"spawn": {
+											"huangjin_zu": 4,
+											"huangjin_gongshou": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 20,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 32,
+							"base_hp": 23,
+							"base_atk": 8,
+							"theme": "官渡对峙·第2战",
+							"objective": {
+								"type": "elite",
+								"label": "官渡对峙：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 14,
+								"huangjin_gongshou": 5,
+								"huangjin_lishi": 2
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										}
+									},
+									{
+										"t": 5.3,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 10.7,
+										"spawn": {
+											"huangjin_zu": 4,
+											"huangjin_gongshou": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 22,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 245,
+						"fragments": {
+							"weiyan": 5
+						}
+					},
+					"repeat_clear": {
+						"junzi": 49
+					}
+				},
+				{
+					"id": "3-2",
+					"name": "乌巢粮道",
+					"unlock_after": "3-1",
+					"boss_stage": false,
+					"rec_power": 7600,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 32,
+							"base_hp": 23,
+							"base_atk": 9,
+							"theme": "乌巢粮道·第1战",
+							"objective": {
+								"type": "elite",
+								"label": "乌巢粮道：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 14,
+								"huangjin_gongshou": 5,
+								"huangjin_lishi": 2
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										}
+									},
+									{
+										"t": 5.3,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 10.7,
+										"spawn": {
+											"huangjin_zu": 4,
+											"huangjin_gongshou": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 21,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 34,
+							"base_hp": 24,
+							"base_atk": 9,
+							"theme": "乌巢粮道·第2战",
+							"objective": {
+								"type": "elite",
+								"label": "乌巢粮道：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 16,
+								"huangjin_gongshou": 6,
+								"huangjin_lishi": 3
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										}
+									},
+									{
+										"t": 5.7,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 11.3,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 23,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 252
+					},
+					"repeat_clear": {
+						"junzi": 50
+					}
+				},
+				{
+					"id": "3-3",
+					"name": "袁军前锋",
+					"unlock_after": "3-2",
+					"boss_stage": false,
+					"rec_power": 8200,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 34,
+							"base_hp": 24,
+							"base_atk": 9,
+							"theme": "袁军前锋·第1战",
+							"objective": {
+								"type": "elite",
+								"label": "袁军前锋：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 16,
+								"huangjin_gongshou": 6,
+								"huangjin_lishi": 3
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										}
+									},
+									{
+										"t": 5.7,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 11.3,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 22,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 36,
+							"base_hp": 25,
+							"base_atk": 10,
+							"theme": "袁军前锋·第2战",
+							"objective": {
+								"type": "elite",
+								"label": "袁军前锋：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 18,
+								"huangjin_gongshou": 7,
+								"huangjin_lishi": 3
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										}
+									},
+									{
+										"t": 6.0,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 12.0,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 24,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 259,
+						"fragments": {
+							"ganning": 5
+						}
+					},
+					"repeat_clear": {
+						"junzi": 52
+					}
+				},
+				{
+					"id": "3-4",
+					"name": "霹雳车阵",
+					"unlock_after": "3-3",
+					"boss_stage": false,
+					"rec_power": 8800,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 36,
+							"base_hp": 25,
+							"base_atk": 10,
+							"theme": "霹雳车阵·第1战",
+							"objective": {
+								"type": "elite",
+								"label": "霹雳车阵：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 18,
+								"huangjin_gongshou": 7,
+								"huangjin_lishi": 3
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										}
+									},
+									{
+										"t": 6.0,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 12.0,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 23,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 38,
+							"base_hp": 26,
+							"base_atk": 10,
+							"theme": "霹雳车阵·第2战",
+							"objective": {
+								"type": "elite",
+								"label": "霹雳车阵：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 20,
+								"huangjin_gongshou": 8,
+								"huangjin_lishi": 4
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 2
+										}
+									},
+									{
+										"t": 6.3,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 12.7,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 25,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 266
+					},
+					"repeat_clear": {
+						"junzi": 53
+					}
+				},
+				{
+					"id": "3-5",
+					"name": "张郃倒戈",
+					"unlock_after": "3-4",
+					"boss_stage": false,
+					"rec_power": 9400,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 38,
+							"base_hp": 26,
+							"base_atk": 11,
+							"theme": "张郃倒戈·第1战",
+							"objective": {
+								"type": "elite",
+								"label": "张郃倒戈：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 20,
+								"huangjin_gongshou": 8,
+								"huangjin_lishi": 4
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 2
+										}
+									},
+									{
+										"t": 6.3,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 12.7,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 24,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 40,
+							"base_hp": 27,
+							"base_atk": 11,
+							"theme": "张郃倒戈·第2战",
+							"objective": {
+								"type": "elite",
+								"label": "张郃倒戈：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 22,
+								"huangjin_gongshou": 9,
+								"huangjin_lishi": 4
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 2
+										}
+									},
+									{
+										"t": 6.7,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 13.3,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 26,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 273
+					},
+					"repeat_clear": {
+						"junzi": 55
+					}
+				},
+				{
+					"id": "3-6",
+					"name": "高览夜袭",
+					"unlock_after": "3-5",
+					"boss_stage": false,
+					"rec_power": 10000,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 40,
+							"base_hp": 27,
+							"base_atk": 11,
+							"theme": "高览夜袭·第1战",
+							"objective": {
+								"type": "elite",
+								"label": "高览夜袭：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 22,
+								"huangjin_gongshou": 9,
+								"huangjin_lishi": 4
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 2
+										}
+									},
+									{
+										"t": 6.7,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 13.3,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											135,
+											180
+										]
+									}
+								]
+							},
+							"gold_total": 25,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 42,
+							"base_hp": 28,
+							"base_atk": 12,
+							"theme": "高览夜袭·第2战",
+							"objective": {
+								"type": "elite",
+								"label": "高览夜袭：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 24,
+								"huangjin_gongshou": 10,
+								"huangjin_lishi": 5
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 4,
+											"huangjin_lishi": 2
+										}
+									},
+									{
+										"t": 7.0,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 14.0,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 27,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 280,
+						"fragments": {
+							"xuchu": 5
+						}
+					},
+					"repeat_clear": {
+						"junzi": 56
+					}
+				},
+				{
+					"id": "3-7",
+					"name": "官渡决战",
+					"unlock_after": "3-6",
+					"boss_stage": false,
+					"rec_power": 10600,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 42,
+							"base_hp": 28,
+							"base_atk": 12,
+							"theme": "官渡决战·第1战",
+							"objective": {
+								"type": "elite",
+								"label": "官渡决战：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 24,
+								"huangjin_gongshou": 10,
+								"huangjin_lishi": 5
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 4,
+											"huangjin_lishi": 2
+										}
+									},
+									{
+										"t": 7.0,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 14.0,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 26,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 44,
+							"base_hp": 29,
+							"base_atk": 12,
+							"theme": "官渡决战·第2战",
+							"objective": {
+								"type": "elite",
+								"label": "官渡决战：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 26,
+								"huangjin_gongshou": 11,
+								"huangjin_lishi": 6
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 9,
+											"huangjin_gongshou": 4,
+											"huangjin_lishi": 2
+										}
+									},
+									{
+										"t": 7.3,
+										"spawn": {
+											"huangjin_zu": 9,
+											"huangjin_gongshou": 4,
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 14.7,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 29,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 288
+					},
+					"repeat_clear": {
+						"junzi": 58
+					}
+				},
+				{
+					"id": "3-8",
+					"name": "袁绍中军",
+					"unlock_after": "3-7",
+					"boss_stage": false,
+					"rec_power": 11400,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 44,
+							"base_hp": 29,
+							"base_atk": 12,
+							"theme": "袁绍中军·第1战",
+							"objective": {
+								"type": "elite",
+								"label": "袁绍中军：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 24,
+								"huangjin_gongshou": 10,
+								"huangjin_lishi": 5
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 4,
+											"huangjin_lishi": 2
+										}
+									},
+									{
+										"t": 7.3,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 14.7,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 27,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 45,
+							"base_hp": 30,
+							"base_atk": 12,
+							"theme": "袁绍中军·第2战",
+							"objective": {
+								"type": "elite",
+								"label": "袁绍中军：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 26,
+								"huangjin_gongshou": 11,
+								"huangjin_lishi": 6
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 9,
+											"huangjin_gongshou": 4,
+											"huangjin_lishi": 2
+										}
+									},
+									{
+										"t": 7.5,
+										"spawn": {
+											"huangjin_zu": 9,
+											"huangjin_gongshou": 4,
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 15.0,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 29,
+							"after": []
+						},
+						{
+							"idx": 3,
+							"duration": 45,
+							"base_hp": 30,
+							"base_atk": 12,
+							"theme": "袁绍中军·第3战",
+							"objective": {
+								"type": "elite",
+								"label": "袁绍中军：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 28,
+								"huangjin_gongshou": 13,
+								"huangjin_lishi": 7
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 10,
+											"huangjin_gongshou": 5,
+											"huangjin_lishi": 3
+										}
+									},
+									{
+										"t": 7.5,
+										"spawn": {
+											"huangjin_zu": 9,
+											"huangjin_gongshou": 4,
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 15.0,
+										"spawn": {
+											"huangjin_zu": 9,
+											"huangjin_gongshou": 4,
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 30,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 320,
+						"fragments": {
+							"zhouyu": 5
+						}
+					},
+					"repeat_clear": {
+						"junzi": 64
+					}
+				}
+			]
+		},
+		{
+			"id": "ch4",
+			"name": "虎牢篇",
+			"order": 4,
+			"unlock": {
+				"require": "ch3"
+			},
+			"stages": [
+				{
+					"id": "4-1",
+					"name": "虎牢关下",
+					"unlock_after": "3-8",
+					"boss_stage": false,
+					"rec_power": 12200,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 30,
+							"base_hp": 24,
+							"base_atk": 10,
+							"theme": "虎牢关下·第1战",
+							"objective": {
+								"type": "elite",
+								"label": "虎牢关下：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 14,
+								"huangjin_gongshou": 5,
+								"huangjin_lishi": 2
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										}
+									},
+									{
+										"t": 5.0,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 10.0,
+										"spawn": {
+											"huangjin_zu": 4,
+											"huangjin_gongshou": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 22,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 32,
+							"base_hp": 25,
+							"base_atk": 10,
+							"theme": "虎牢关下·第2战",
+							"objective": {
+								"type": "elite",
+								"label": "虎牢关下：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 16,
+								"huangjin_gongshou": 6,
+								"huangjin_lishi": 3
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										}
+									},
+									{
+										"t": 5.3,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 10.7,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 24,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 310,
+						"fragments": {
+							"diaochan": 5
+						}
+					},
+					"repeat_clear": {
+						"junzi": 62
+					}
+				},
+				{
+					"id": "4-2",
+					"name": "西凉铁骑",
+					"unlock_after": "4-1",
+					"boss_stage": false,
+					"rec_power": 13000,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 32,
+							"base_hp": 25,
+							"base_atk": 11,
+							"theme": "西凉铁骑·第1战",
+							"objective": {
+								"type": "elite",
+								"label": "西凉铁骑：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 16,
+								"huangjin_gongshou": 6,
+								"huangjin_lishi": 3
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										}
+									},
+									{
+										"t": 5.3,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 10.7,
+										"spawn": {
+											"huangjin_zu": 5,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 23,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 34,
+							"base_hp": 26,
+							"base_atk": 11,
+							"theme": "西凉铁骑·第2战",
+							"objective": {
+								"type": "elite",
+								"label": "西凉铁骑：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 18,
+								"huangjin_gongshou": 7,
+								"huangjin_lishi": 3
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										}
+									},
+									{
+										"t": 5.7,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 11.3,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 25,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 320
+					},
+					"repeat_clear": {
+						"junzi": 64
+					}
+				},
+				{
+					"id": "4-3",
+					"name": "汜水残兵",
+					"unlock_after": "4-2",
+					"boss_stage": false,
+					"rec_power": 13800,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 34,
+							"base_hp": 26,
+							"base_atk": 11,
+							"theme": "汜水残兵·第1战",
+							"objective": {
+								"type": "elite",
+								"label": "汜水残兵：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 18,
+								"huangjin_gongshou": 7,
+								"huangjin_lishi": 3
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										}
+									},
+									{
+										"t": 5.7,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 11.3,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 24,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 36,
+							"base_hp": 27,
+							"base_atk": 12,
+							"theme": "汜水残兵·第2战",
+							"objective": {
+								"type": "elite",
+								"label": "汜水残兵：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 20,
+								"huangjin_gongshou": 8,
+								"huangjin_lishi": 4
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 2
+										}
+									},
+									{
+										"t": 6.0,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 12.0,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 26,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 330,
+						"fragments": {
+							"huatuo": 5
+						}
+					},
+					"repeat_clear": {
+						"junzi": 66
+					}
+				},
+				{
+					"id": "4-4",
+					"name": "飞熊军",
+					"unlock_after": "4-3",
+					"boss_stage": false,
+					"rec_power": 14600,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 36,
+							"base_hp": 27,
+							"base_atk": 12,
+							"theme": "飞熊军·第1战",
+							"objective": {
+								"type": "elite",
+								"label": "飞熊军：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 20,
+								"huangjin_gongshou": 8,
+								"huangjin_lishi": 4
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 2
+										}
+									},
+									{
+										"t": 6.0,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 12.0,
+										"spawn": {
+											"huangjin_zu": 6,
+											"huangjin_gongshou": 2,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 25,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 38,
+							"base_hp": 28,
+							"base_atk": 12,
+							"theme": "飞熊军·第2战",
+							"objective": {
+								"type": "elite",
+								"label": "飞熊军：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 22,
+								"huangjin_gongshou": 9,
+								"huangjin_lishi": 4
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 2
+										}
+									},
+									{
+										"t": 6.3,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 12.7,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 27,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 340
+					},
+					"repeat_clear": {
+						"junzi": 68
+					}
+				},
+				{
+					"id": "4-5",
+					"name": "郿坞粮仓",
+					"unlock_after": "4-4",
+					"boss_stage": false,
+					"rec_power": 15400,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 38,
+							"base_hp": 28,
+							"base_atk": 12,
+							"theme": "郿坞粮仓·第1战",
+							"objective": {
+								"type": "elite",
+								"label": "郿坞粮仓：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 22,
+								"huangjin_gongshou": 9,
+								"huangjin_lishi": 4
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 2
+										}
+									},
+									{
+										"t": 6.3,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 12.7,
+										"spawn": {
+											"huangjin_zu": 7,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 26,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 40,
+							"base_hp": 29,
+							"base_atk": 12,
+							"theme": "郿坞粮仓·第2战",
+							"objective": {
+								"type": "elite",
+								"label": "郿坞粮仓：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 24,
+								"huangjin_gongshou": 10,
+								"huangjin_lishi": 5
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 4,
+											"huangjin_lishi": 2
+										}
+									},
+									{
+										"t": 6.7,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 13.3,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 28,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 350,
+						"fragments": {
+							"zhuge": 5
+						}
+					},
+					"repeat_clear": {
+						"junzi": 70
+					}
+				},
+				{
+					"id": "4-6",
+					"name": "董卓亲卫",
+					"unlock_after": "4-5",
+					"boss_stage": false,
+					"rec_power": 16200,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 40,
+							"base_hp": 29,
+							"base_atk": 12,
+							"theme": "董卓亲卫·第1战",
+							"objective": {
+								"type": "elite",
+								"label": "董卓亲卫：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 24,
+								"huangjin_gongshou": 10,
+								"huangjin_lishi": 5
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 4,
+											"huangjin_lishi": 2
+										}
+									},
+									{
+										"t": 6.7,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 13.3,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 1
+										},
+										"arc": [
+											135,
+											180
+										]
+									}
+								]
+							},
+							"gold_total": 27,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 42,
+							"base_hp": 30,
+							"base_atk": 12,
+							"theme": "董卓亲卫·第2战",
+							"objective": {
+								"type": "elite",
+								"label": "董卓亲卫：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 26,
+								"huangjin_gongshou": 11,
+								"huangjin_lishi": 6
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 9,
+											"huangjin_gongshou": 4,
+											"huangjin_lishi": 2
+										}
+									},
+									{
+										"t": 7.0,
+										"spawn": {
+											"huangjin_zu": 9,
+											"huangjin_gongshou": 4,
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 14.0,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 29,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 360
+					},
+					"repeat_clear": {
+						"junzi": 72
+					}
+				},
+				{
+					"id": "4-7",
+					"name": "洛阳火起",
+					"unlock_after": "4-6",
+					"boss_stage": false,
+					"rec_power": 17000,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 42,
+							"base_hp": 30,
+							"base_atk": 12,
+							"theme": "洛阳火起·第1战",
+							"objective": {
+								"type": "elite",
+								"label": "洛阳火起：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 26,
+								"huangjin_gongshou": 11,
+								"huangjin_lishi": 6
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 9,
+											"huangjin_gongshou": 4,
+											"huangjin_lishi": 2
+										}
+									},
+									{
+										"t": 7.0,
+										"spawn": {
+											"huangjin_zu": 9,
+											"huangjin_gongshou": 4,
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 14.0,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 28,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 44,
+							"base_hp": 30,
+							"base_atk": 12,
+							"theme": "洛阳火起·第2战",
+							"objective": {
+								"type": "elite",
+								"label": "洛阳火起：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 28,
+								"huangjin_gongshou": 12,
+								"huangjin_lishi": 7
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 10,
+											"huangjin_gongshou": 4,
+											"huangjin_lishi": 3
+										}
+									},
+									{
+										"t": 7.3,
+										"spawn": {
+											"huangjin_zu": 9,
+											"huangjin_gongshou": 4,
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 14.7,
+										"spawn": {
+											"huangjin_zu": 9,
+											"huangjin_gongshou": 4,
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 30,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 370
+					},
+					"repeat_clear": {
+						"junzi": 74
+					}
+				},
+				{
+					"id": "4-8",
+					"name": "暴君之怒",
+					"unlock_after": "4-7",
+					"boss_stage": false,
+					"rec_power": 18000,
+					"waves": [
+						{
+							"idx": 1,
+							"duration": 44,
+							"base_hp": 30,
+							"base_atk": 12,
+							"theme": "暴君之怒·第1战",
+							"objective": {
+								"type": "elite",
+								"label": "暴君之怒：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 26,
+								"huangjin_gongshou": 11,
+								"huangjin_lishi": 6
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 9,
+											"huangjin_gongshou": 4,
+											"huangjin_lishi": 2
+										}
+									},
+									{
+										"t": 7.3,
+										"spawn": {
+											"huangjin_zu": 9,
+											"huangjin_gongshou": 4,
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 14.7,
+										"spawn": {
+											"huangjin_zu": 8,
+											"huangjin_gongshou": 3,
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 29,
+							"after": []
+						},
+						{
+							"idx": 2,
+							"duration": 45,
+							"base_hp": 30,
+							"base_atk": 12,
+							"theme": "暴君之怒·第2战",
+							"objective": {
+								"type": "elite",
+								"label": "暴君之怒：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 28,
+								"huangjin_gongshou": 12,
+								"huangjin_lishi": 7
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 10,
+											"huangjin_gongshou": 4,
+											"huangjin_lishi": 3
+										}
+									},
+									{
+										"t": 7.5,
+										"spawn": {
+											"huangjin_zu": 9,
+											"huangjin_gongshou": 4,
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 15.0,
+										"spawn": {
+											"huangjin_zu": 9,
+											"huangjin_gongshou": 4,
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 30,
+							"after": []
+						},
+						{
+							"idx": 3,
+							"duration": 45,
+							"base_hp": 30,
+							"base_atk": 12,
+							"theme": "暴君之怒·第3战",
+							"objective": {
+								"type": "elite",
+								"label": "暴君之怒：清剿来犯之敌"
+							},
+							"composition": {
+								"huangjin_zu": 30,
+								"huangjin_gongshou": 14,
+								"huangjin_lishi": 8
+							},
+							"spawn_plan": {
+								"arc": [
+									-180,
+									180
+								],
+								"batches": [
+									{
+										"t": 0.0,
+										"spawn": {
+											"huangjin_zu": 10,
+											"huangjin_gongshou": 5,
+											"huangjin_lishi": 3
+										}
+									},
+									{
+										"t": 7.5,
+										"spawn": {
+											"huangjin_zu": 10,
+											"huangjin_gongshou": 5,
+											"huangjin_lishi": 3
+										},
+										"arc": [
+											-45,
+											45
+										]
+									},
+									{
+										"t": 15.0,
+										"spawn": {
+											"huangjin_zu": 10,
+											"huangjin_gongshou": 4,
+											"huangjin_lishi": 2
+										},
+										"arc": [
+											-135,
+											-45
+										]
+									}
+								]
+							},
+							"gold_total": 30,
+							"after": []
+						}
+					],
+					"first_clear": {
+						"junzi": 410,
+						"fragments": {
+							"lvbu": 5
+						}
+					},
+					"repeat_clear": {
+						"junzi": 82
+					}
+				}
+			]
+		}
+	]
+}

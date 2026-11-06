@@ -68,6 +68,11 @@ func _build() -> void:
 	var restart := UiTheme.button("重 开", 20, Vector2(240, 48))
 	restart.pressed.connect(_on_restart)
 	vb.add_child(restart)
+	# 塔无尽模式:撤退结算入库(02 §8.4,折算 retreat_mult),闯关不显示
+	if RunState.mode == &"tower" and bool(RunState.context.get("endless", false)):
+		var retreat := UiTheme.button("撤 退 结 算", 20, Vector2(240, 48))
+		retreat.pressed.connect(_on_retreat)
+		vb.add_child(retreat)
 	var menu := UiTheme.button("回主菜单", 20, Vector2(240, 48))
 	menu.pressed.connect(_on_menu)
 	vb.add_child(menu)
@@ -80,6 +85,16 @@ func _ensure_built() -> void:
 func _on_restart() -> void:
 	visible = false
 	SceneRouter.restart_battle()
+
+## 塔撤退:结算入库(02 §8.4)→ 结算页 → 回主城。暂停中也能点(PROCESS_MODE_ALWAYS)
+func _on_retreat() -> void:
+	visible = false
+	var wd = get_tree().get_first_node_in_group("wave_director")
+	if wd != null and is_instance_valid(wd) and wd.has_method("retreat"):
+		get_tree().paused = false
+		wd.retreat()
+		return
+	SceneRouter.goto_city()
 
 ## 回主菜单(冒烟/按钮共用)
 func _on_menu() -> void:

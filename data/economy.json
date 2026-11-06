@@ -1,0 +1,34 @@
+{
+  "currencies": ["junzi"],
+  "level": {
+    "cap": 30,
+    "growth_per_level": 0.08,
+    "cost_base": 50,
+    "cost_exp": 1.4
+  },
+  "star": {
+    "cap": 5,
+    "mult_per_star": 0.15
+  },
+  "star_up_cost": [10, 20, 40, 80],
+  "recruit": {
+    "buy_price": { "normal": 800, "rare": 1600, "epic": 3000 },
+    "fuse_cost": { "normal": 20, "rare": 40, "epic": 80 },
+    "dupe_to_fragment": 5
+  },
+  "rarity": {
+    "starting": ["liubei", "guanyu", "zhangfei"],
+    "epic": ["lvbu", "zhuge", "zhouyu", "zhaoyun", "diaochan"],
+    "rare": ["huatuo", "machao", "huangzhong", "weiyan", "zhangliao", "xuchu", "ganning"],
+    "normal": []
+  },
+  "item_price": {
+    "slot_cap": [500, 1200, 2400, 4000]
+  },
+  "settle": {
+    "tower_floor":   { "junzi": { "base": 15, "per_floor": 3 }, "fragments": { "base": 1, "per_4_floor": 1 }, "boss_mult": 3 },
+    "retreat_mult": 1.0, "death_mult": 0.5,
+    "first_clear":   { "junzi_base": 100, "per_chapter": 20, "per_stage": 5, "boss_bonus": 50, "fragments": 5 },
+    "repeat_mult": 0.2, "repeat_fragments": 1
+  }
+}

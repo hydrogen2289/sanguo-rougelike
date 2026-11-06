@@ -1,10 +1,14 @@
 class_name UiTheme
 extends RefCounted
-## UI 主题工具(M3):米纸/卷轴质感,全部引用 palette token + SystemFont(01 §11,已拍板不下载素材)。
+## UI 主题工具(M3):米纸/卷轴质感,全部引用 palette token + 内嵌中文字体(01 §11)。
+## 字体改为工程内嵌 Noto Sans SC Regular(SIL OFL 1.1,assets/fonts/,含 31036 字形),
+## 不再依赖 SystemFont 读系统字体 —— 否则 Steam Deck/ Linux 上中文全是方块。
+## FONT_STACK 仅在极端情况下保留作回退(内嵌字体缺失时不至于崩,但可能缺字)。
 
+const FONT_PATH := "res://assets/fonts/NotoSansSC-Regular.ttf"
 const FONT_STACK := ["Microsoft YaHei", "SimHei", "Noto Sans CJK SC"]
 
-static var _fonts := {}   # 字号 -> SystemFont 缓存
+static var _font_res: Font = null   # 内嵌字体单例(字号由 font_size 覆盖,与字体资源无关)
 
 static func col(token: String, fallback: Color) -> Color:
 	var c = DataDB.palette.get(token, "")
@@ -12,12 +16,24 @@ static func col(token: String, fallback: Color) -> Color:
 		return Color(str(c))
 	return fallback
 
-static func font(size: int) -> SystemFont:
-	if not _fonts.has(size):
-		var f := SystemFont.new()
-		f.font_names = FONT_STACK
-		_fonts[size] = f
-	return _fonts[size]
+## 内嵌字体单例:优先 FontFile,资源缺失时才退回 SystemFont(发行包内不会走到回退)。
+static func font_res() -> Font:
+	if _font_res != null:
+		return _font_res
+	if ResourceLoader.exists(FONT_PATH):
+		var f := load(FONT_PATH)
+		if f is Font:
+			_font_res = f
+			return _font_res
+	var sf := SystemFont.new()
+	sf.font_names = FONT_STACK
+	_font_res = sf
+	return _font_res
+
+static func font(_size: int) -> Font:
+	# 字号通过 add_theme_font_size_override 施加,字体资源可复用同一份;
+	# 参数保留是为了不惊动既有调用点(hud.gd / main_menu.gd / 全部 UiTheme.label|button)。
+	return font_res()
 
 static func label(text: String, font_size: int, color: Color, outline := 4) -> Label:
 	var l := Label.new()
