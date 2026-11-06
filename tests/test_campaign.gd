@@ -44,7 +44,7 @@ func _clear_all(outcome: Dictionary) -> void:
 func _test_table_and_queries() -> void:
 	check(not DataDB.campaign.is_empty(), "campaign.json 已加载")
 	var chapters: Array = DataDB.chapter_list()
-	check(chapters.size() == 1, "章节 1 章(桃园篇,M9 范围)")
+	check(chapters.size() >= 1, "至少 1 章(内容量由数据侧扩充,不锁死章数)")
 	var ch1: Dictionary = chapters[0]
 	check(str(ch1.get("id", "")) == "ch1" and str(ch1.get("name", "")) == "桃园篇", "ch1 桃园篇")
 	check(int(ch1.get("order", 0)) == 1, "ch1 order=1")

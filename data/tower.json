@@ -1,11 +1,11 @@
 {
-  "_doc": "试炼塔层参数与随机生成规则(02 §4.4)。1~8 层直接引用 waves.json;9 层起由 tower_wave_gen.gd 按本表生成。数值为框架占位,精调由数值方出表后只改本文件。",
+  "_doc": "试炼塔层参数与随机生成规则(02 §4.4)。1~8 层直接引用 waves.json;9 层起由 tower_wave_gen.gd 按本表生成。数值由数值方定表(2026-11-06),推导见 docs/balance-economy-2026-11-06.md §3。",
   "floors_ref": { "from": 1, "to": 8, "source": "waves.json" },
   "gen_from": 9,
   "boss_every": 8,
   "gen": {
-    "base_hp":  { "f0": 30, "growth": 1.08 },
-    "base_atk": { "f0": 10, "growth": 1.05 },
+    "base_hp":  { "f0": 30, "growth": 1.05 },
+    "base_atk": { "f0": 10, "growth": 1.03 },
     "count":    { "f0": 20, "per_floor": 1, "cap": 45 },
     "batch_n":  [3, 5],
     "enemy_pool": ["huangjin_zu", "huangjin_gongshou", "huangjin_lishi"],

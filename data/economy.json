@@ -26,7 +26,7 @@
     "slot_cap": [500, 1200, 2400, 4000]
   },
   "settle": {
-    "tower_floor":   { "junzi": { "base": 15, "per_floor": 3 }, "fragments": { "base": 1, "per_4_floor": 1 }, "boss_mult": 3 },
+    "tower_floor":   { "junzi": { "base": 25, "per_floor": 9 }, "fragments": { "base": 1, "per_4_floor": 1 }, "boss_mult": 3 },
     "retreat_mult": 1.0, "death_mult": 0.5,
     "first_clear":   { "junzi_base": 100, "per_chapter": 20, "per_stage": 5, "boss_bonus": 50, "fragments": 5 },
     "repeat_mult": 0.2, "repeat_fragments": 1
